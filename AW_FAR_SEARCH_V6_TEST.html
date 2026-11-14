@@ -20,7 +20,7 @@ button,select,input{font:inherit}
 button{border:0;border-radius:9px;background:#087f91;color:white;padding:12px;cursor:pointer}
 button:disabled{opacity:.5}
 input,select{width:100%;padding:12px;border:1px solid #c7d0d3;border-radius:9px;margin:5px 0 10px}
-#map{height:390px;border-radius:10px;overflow:hidden}
+#map{height:440px;border-radius:10px;overflow:hidden}
 #assets{max-height:450px;overflow:auto}
 .asset{padding:13px;border:1px solid #dce3e6;border-radius:10px;margin:9px 0}
 .asset strong{display:block;margin-bottom:6px}
@@ -47,12 +47,12 @@ input,select{width:100%;padding:12px;border:1px solid #c7d0d3;border-radius:9px;
 .aw-teach-row button{font-size:11px;padding:8px}
 #awVoiceSaved{font-size:11px;margin-top:5px}
 #awVoiceSaved button{font-size:10px;padding:3px 6px;margin-left:6px}
-@media(max-width:600px){#map{height:440px}.aw-map-heading{align-items:flex-start}}
+@media(max-width:600px){#map{height:52vh;min-height:350px}.aw-map-heading{align-items:flex-start}}
 </style>
 </head>
 <body>
 <header>
-<h1>AW FAR SEARCH — V6.7 TEST</h1>
+<h1>AW FAR SEARCH — V6.9 TEST</h1>
 <p>Amatola Water | Facility Mapping & Asset Verification</p>
 </header>
 <main>
@@ -62,6 +62,14 @@ input,select{width:100%;padding:12px;border:1px solid #c7d0d3;border-radius:9px;
 <button id="logout" class="hidden">Sign out</button>
 </section>
 <section id="workspace" class="hidden">
+<div class="panel">
+<div class="aw-map-heading"><h3>Facility map</h3><div id="awVoiceToolbar" class="aw-voice-toolbar" aria-label="Voice navigation">
+<button type="button" id="awVoiceButton">🎤 Voice search</button><span id="awVoiceStatus" aria-live="polite">Ready</span>
+</div></div><div style="font-size:11px;color:#526577;margin:0 0 8px">Say a facility first, then a component or FAR number. Example: “Nahoon Water Treatment Works”, then “flow meter”.</div><div id="awVoiceChoices" class="aw-voice-choices hidden" aria-live="polite"></div>
+<details id="awVoiceDictionary"><summary>Teach voice search a name</summary><div class="aw-teach-row"><input id="awVoicePhrase" placeholder="What Chrome hears, e.g. now on" aria-label="Phrase heard"><select id="awVoiceTarget" aria-label="Correct scheme or facility"><option value="">Select correct name</option></select><button type="button" id="awVoiceTeach">Save phrase</button></div><div id="awVoiceSaved"></div><div id="awVocabularyInfo" style="margin-top:6px">Loading vocabulary...</div><button type="button" id="awExportVocabulary" style="font-size:11px;padding:6px;margin-top:6px">Export AGOL names + voice vocabulary</button></details>
+<div id="map"></div>
+
+</div>
 <div class="stats panel">
 <div class="stat"><b id="facilityCount">0</b>Facilities</div>
 <div class="stat"><b id="assetCount">0</b>FAR components</div>
@@ -76,22 +84,13 @@ input,select{width:100%;padding:12px;border:1px solid #c7d0d3;border-radius:9px;
 <label>Facility</label>
 <select id="facility"><option value="">Select a facility</option></select>
 </div>
-<div class="columns">
 <div class="panel">
-<div class="aw-map-heading"><h3>Facility map</h3><div id="awVoiceToolbar" class="aw-voice-toolbar" aria-label="Voice navigation">
-<button type="button" id="awVoiceButton">🎤 Voice search</button><span id="awVoiceStatus" aria-live="polite">Ready</span>
-</div></div><div style="font-size:11px;color:#526577;margin:0 0 8px">Try: “Find meter inside Nahoon Water Treatment Works”, “show pumps”, or “FAR ending 1234”.</div><div id="awVoiceChoices" class="aw-voice-choices hidden" aria-live="polite"></div>
-<details id="awVoiceDictionary"><summary>Teach voice search a name</summary><div class="aw-teach-row"><input id="awVoicePhrase" placeholder="What Chrome hears, e.g. now on" aria-label="Phrase heard"><select id="awVoiceTarget" aria-label="Correct scheme or facility"><option value="">Select correct name</option></select><button type="button" id="awVoiceTeach">Save phrase</button></div><div id="awVoiceSaved"></div><div id="awVocabularyInfo" style="margin-top:6px">Loading vocabulary...</div><button type="button" id="awExportVocabulary" style="font-size:11px;padding:6px;margin-top:6px">Export AGOL names + voice vocabulary</button></details>
-<div id="map"></div>
-
-</div>
-<div class="panel">
-<h3 id="selectedTitle">Select a facility</h3>
+<h3>Selected facility and FAR components</h3><h4 id="selectedTitle">Select a facility</h4>
 <p id="progress"></p>
 <input id="farSearch" placeholder="Search FAR, component, building or room">
 <div id="assets">Select a facility on the map or from the list.</div>
 </div>
-</div>
+
 </section>
 </main>
 <script>
