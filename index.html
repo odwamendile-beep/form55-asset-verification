@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Amatola Water | Form 55</title>
+<style>
+*{box-sizing:border-box}
+body{font-family:Arial,sans-serif;margin:0;background:#f4f6f8;color:#20313e}
+header{background:#07546a;color:white;padding:20px}
+main{max-width:1100px;margin:auto;padding:20px}
+input{width:100%;padding:14px;font-size:16px;border:1px solid #bbb;border-radius:6px}
+.card{background:white;border:1px solid #ddd;border-radius:8px;margin:12px 0;padding:16px}
+.far{font-weight:bold;font-size:17px}
+.details{line-height:1.8;margin:10px 0}
+button,.verify{background:#087e94;color:white;border:0;border-radius:5px;padding:11px 18px;cursor:pointer;text-decoration:none;display:inline-block}
+button:disabled{opacity:.5;cursor:not-allowed}
+#logout{background:#555;margin-left:8px}
+#status{margin:14px 0;color:#455}
+</style>
+</head>
+<body>
+<header>
+<h2>AMATOLA WATER | FORM 55</h2>
+<div>Asset Verification - Component Selection</div>
+</header>
+<main>
+<div id="auth">
+<button id="login">Sign in with ArcGIS Online</button>
+<button id="logout" hidden>Sign out</button>
+</div>
+<p id="status">Sign in to access FAR assets.</p>
+<section id="app" hidden>
+<input id="search" placeholder="Search FAR number, component, building or room">
+<p id="count"></p>
+<div id="results"></div>
+</section>
+</main>
+<script>
+"use strict";
+
+const CLIENT_ID="StEmFueIJqt2kLIL";
+const REDIRECT="https://odwamendile-beep.github.io/form55-asset-verification/";
+const SERVICE="https://services.arcgis.com/C6rxPmErTlCKv9Qe/arcgis/rest/services/AW_Asset_Verification_Field_2026/FeatureServer/1";
+const PORTAL="https://www.arcgis.com";
+
+let token=null;
+let expiresAt=0;
+let records=[];
+
+const status=document.getElementById("status");
+const app=document.getElementById("app");
+const login=document.getElementById("login");
+const logout=document.getElementById("logout");
+const search=document.getElementById("search");
+const results=document.getElementById("results");
+const count=document.getElementById("count");
+
+function setStatus(message){status.textContent=message;}
+
+function clearSession(){
+ token=null;
+ expiresAt=0;
+ records=[];
+ app.hidden=true;
+ logout.hidden=true;
+ login.hidden=false;
+ results.replaceChildren();
+}
+
+function make(tag,text,cls){
+ const e=document.createElement(tag);
+ if(cls)e.className=cls;
+ e.textContent=text;
+ return e;
+}
+
+login.onclick=()=>{
+ const state=crypto.randomUUID();
+ sessionStorage.setItem("form55_oauth_state",state);
+ const url=new URL(PORTAL+"/sharing/rest/oauth2/authorize");
+ url.searchParams.set("client_id",CLIENT_ID);
+ url.searchParams.set("response_type","token");
+ url.searchParams.set("redirect_uri",REDIRECT);
+ url.searchParams.set("expiration","60");
+ url.searchParams.set("state",state);
+ window.location.assign(url.toString());
+};
+
+logout.onclick=()=>{
+ clearSession();
+ setStatus("Signed out of the launcher.");
+};
+
+async function request(params){
+ if(!token || Date.now()>=expiresAt){
+  clearSession();
+  throw Error("Session expired. Please sign in again.");
+ }
+ const body=new URLSearchParams({
+  f:"json",
+  token:token,
+  ...params
+ });
+ const response=await fetch(SERVICE+"/query",{
+  method:"POST",
+  body:body
+ });
+ if(!response.ok)throw Error("ArcGIS HTTP "+response.status);
+ const data=await response.json();
+ if(data.error)throw Error(data.error.message||"ArcGIS request failed");
+ return data;
+}
+
+async function loadRecords(){
+ setStatus("Loading authorised FAR records...");
+ const idResponse=await request({
+  where:"1=1",
+  returnIdsOnly:"true"
+ });
+ const ids=idResponse.objectIds||[];
+ const oidField=idResponse.objectIdFieldName||"OBJECTID";
+ const all=[];
+ const fields=[
+  "FAR_ID","ComponentType","Building","Floor",
+  "Room","Verification_Status","Survey123_Edit_URL"
+ ];
+ for(let i=0;i<ids.length;i+=150){
+  const batch=ids.slice(i,i+150);
+  const data=await request({
+   objectIds:batch.join(","),
+   outFields:fields.join(","),
+   returnGeometry:"false"
+  });
+  for(const f of data.features||[]){
+   const a=f.attributes||{};
+   const url=String(a.Survey123_Edit_URL||"");
+   all.push({
+    far:String(a.FAR_ID||""),
+    component:String(a.ComponentType||""),
+    building:String(a.Building||""),
+    floor:String(a.Floor||""),
+    room:String(a.Room||""),
+    status:String(a.Verification_Status||"PENDING"),
+    url:url
+   });
+  }
+  setStatus("Loading assets: "+all.length+" / "+ids.length);
+ }
+ records=all;
+ app.hidden=false;
+ logout.hidden=false;
+ login.hidden=true;
+ setStatus("Signed in. "+records.length+" assets loaded.");
+ render();
+}
+
+function render(){
+ const q=search.value.trim().toLowerCase();
+ const filtered=records.filter(r=>
+  [r.far,r.component,r.building,r.floor,r.room]
+  .some(v=>v.toLowerCase().includes(q))
+ );
+ count.textContent=filtered.length+" of "+records.length+" assets";
+ results.replaceChildren();
+
+ for(const r of filtered.slice(0,100)){
+  const card=make("div","","card");
+  card.appendChild(make("div",r.far,"far"));
+  const detail=make("div","","details");
+
+  for(const [label,value] of [
+   ["Component",r.component],
+   ["Building",r.building],
+   ["Floor",r.floor],
+   ["Room",r.room],
+   ["Status",r.status]
+  ]){
+   detail.appendChild(make("div",label+": "+(value||"-")));
+  }
+  card.appendChild(detail);
+
+  const valid=r.url.startsWith("https://survey123.arcgis.app?");
+
+  if(valid){
+   const link=make("a","Verify Asset","verify");
+   link.href=r.url;
+   link.target="_blank";
+   link.rel="noopener noreferrer";
+   card.appendChild(link);
+  }else{
+   card.appendChild(make("div","Survey123 link unavailable"));
+  }
+  results.appendChild(card);
+ }
+}
+
+search.addEventListener("input",render);
+
+async function start(){
+ const hash=new URLSearchParams(location.hash.substring(1));
+ const returnedToken=hash.get("access_token");
+ const returnedState=hash.get("state");
+ const expectedState=sessionStorage.getItem("form55_oauth_state");
+
+ if(location.hash){
+  history.replaceState(null,"",location.pathname+location.search);
+ }
+
+ if(hash.get("error")){
+  setStatus("ArcGIS sign-in failed: "+hash.get("error"));
+  return;
+ }
+
+ if(!returnedToken){
+  setStatus("Sign in to access FAR assets.");
+  return;
+ }
+
+ sessionStorage.removeItem("form55_oauth_state");
+
+ if(!expectedState || returnedState!==expectedState){
+  setStatus("Sign-in verification failed. Please try again.");
+  return;
+ }
+
+ token=returnedToken;
+ const seconds=Number(hash.get("expires_in")||3600);
+ expiresAt=Date.now()+Math.max(0,seconds-60)*1000;
+
+ try{
+  await loadRecords();
+ }catch(err){
+  clearSession();
+  setStatus("Unable to load assets: "+err.message);
+ }
+}
+start();
+</script>
+</body>
+</html>
