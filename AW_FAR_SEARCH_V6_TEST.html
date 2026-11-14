@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>AW FAR SEARCH V6.6 TEST</title>
+<title>AW FAR SEARCH V7.1 FIELD GREEN TEST</title>
 <link rel="icon" href="./icon-192.png">
 <link rel="stylesheet" href="https://js.arcgis.com/4.32/esri/themes/light/main.css">
 <script src="https://js.arcgis.com/4.32/"></script>
@@ -92,11 +92,48 @@ input,select{width:100%;padding:12px;border:1px solid #c7d0d3;border-radius:9px;
  #awSheet[data-position="closed"] #awSheetContent{visibility:hidden;pointer-events:none}
  #awMapPanel .esri-ui-top-right{top:130px}
 }
+
+/* V7.1 — Field Green identity and clean map. Only presentation/default visibility changes. */
+:root{--aw-forest:#123d30;--aw-bottle:#17533d;--aw-leaf:#27825c;--aw-mint:#d9f2df;--aw-pale:#edf8ee;--aw-ink:#17382c}
+body{background:var(--aw-pale);color:var(--aw-ink)}
+header{background:linear-gradient(110deg,#103a2d,#1b6448);border-bottom:2px solid #7cce94}
+button{background:var(--aw-bottle)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #7fcb93;outline-offset:2px}
+.panel{border:1px solid #d1e5d7}
+.stat{background:linear-gradient(140deg,#e2f6e6,#f2faf3);color:#194a35}
+.asset{border-color:#c7e3cf;background:#fcfffc}
+.asset a{background:var(--aw-bottle)}
+#awVoiceButton{background:var(--aw-bottle)!important;color:#fff}
+#awResetAll{background:#315e49!important}
+#awMapTools button{background:#f0fff2;color:#16533b;border:1px solid #a5d4b3}
+#awMapTools button:active{background:#c8efd2}
+#awGpsStatus{background:#e9f9e9ee;color:#174a33}
+#awVoiceStatus{color:#1b5038}
+.aw-grip{background:#67b685}
+#awSheetHandle{color:#1d583f}
+@media(max-width:700px){
+ header{background:linear-gradient(100deg,#103b2eec,#1c6448ec)}
+ #awMapPanel{background:#c8dfd0}
+ #awAuthPanel{background:#f2fff3ed;border:1px solid #b2d8bb}
+ #awVoiceStatus{background:#ecfaeaf0;color:#174a34}
+ #awVoiceDictionary{background:#f1fff1f0}
+ #awSheet{background:#f1f9f1;border-top:2px solid #6fb88a;box-shadow:0 -5px 22px #06271970}
+ #awSheetContent .panel{background:#fbfffb;border-color:#cbe3d1}
+ #awSheetContent .stats{background:#e8f5e9}
+ #awSheetContent .stat{background:#d9efdf}
+ #awSheetContent input,#awSheetContent select{background:#fff;color:#1d3d2b;border-color:#b7d5c1}
+ /* Map is the priority: current-view box and large controls must not cover imagery. */
+ #awCurrentViewFloating{display:none!important}
+ #awMapPanel .esri-ui-top-right{top:205px;right:6px}
+ #awMapPanel .esri-ui-top-right > *{max-width:132px}
+ #awMapPanel .esri-ui-top-right > *:not(:first-child){display:none}
+ #awMapTools button{width:48px;height:48px}
+}
 </style>
 </head>
 <body>
 <header>
-<h1>AW FAR SEARCH — V7 MOBILE TEST</h1>
+<h1>AW FAR SEARCH — V7.1 FIELD GREEN TEST</h1>
 <p>Amatola Water | Facility Mapping & Asset Verification</p>
 </header>
 <main>
@@ -346,7 +383,7 @@ const awContextBase =
 const awBulkPipelines = new FeatureLayer({
  url: awContextBase + "4",
  title: "AW Bulk Pipelines",
- visible: true,
+ visible: false,
  popupEnabled: true
 });
 
@@ -354,7 +391,7 @@ const awBulkPipelines = new FeatureLayer({
 const awSchemeBoundaries = new FeatureLayer({
  url: awContextBase + "8",
  title: "Scheme Boundaries",
- visible: true,
+ visible: false,
  popupEnabled: false,
  labelsVisible: false,
  renderer: {
@@ -426,7 +463,7 @@ awPanel.innerHTML = `
    <span style="width:17px;height:12px;
     border:2px solid #b7c3d0;border-radius:2px"></span>
    <span>Schemes</span>
-   <input id="awSchemes" type="checkbox" checked
+   <input id="awSchemes" type="checkbox"
     aria-label="Show schemes" style="margin:0">
   </div>
 
@@ -448,7 +485,7 @@ awPanel.innerHTML = `
    <span style="width:20px;height:3px;
     background:#d9bd00;border-radius:3px"></span>
    <span>Pipelines</span>
-   <input id="awPipelines" type="checkbox" checked
+   <input id="awPipelines" type="checkbox"
     aria-label="Show pipelines" style="margin:0">
   </div>
 
@@ -486,7 +523,8 @@ awPanel.querySelector("#awCollapse")
  awCurrentView.style.cssText="line-height:1.25;overflow-wrap:anywhere;font-size:10px";
  awCurrentViewPanel.appendChild(awCurrentView);
  view.ui.add(awCurrentViewPanel,"bottom-right");
- awPanel.style.cssText="width:148px;max-width:42vw;box-sizing:border-box;background:rgba(255,255,255,.97);color:#183153;border:1px solid #dce4ec;border-radius:8px;box-shadow:0 2px 9px #0002;padding:7px;font:10px Arial,sans-serif;";
+  awCurrentViewPanel.id="awCurrentViewFloating";
+ awPanel.style.cssText="width:128px;max-width:36vw;box-sizing:border-box;background:rgba(255,255,255,.97);color:#183153;border:1px solid #dce4ec;border-radius:8px;box-shadow:0 2px 9px #0002;padding:7px;font:10px Arial,sans-serif;";
  awPanel.querySelector("strong").style.fontSize="11px";
  awPanel.querySelector("#awPanelBody").style.display="none";
  awPanel.querySelector("#awCollapse").textContent="+";
@@ -1147,7 +1185,7 @@ el("farSearch").oninput=()=>{window.awVoiceAssetIds=null;renderAssets();if(windo
    view.goTo({center:[lon,lat],zoom:Math.max(view.zoom||15,16)}).catch(()=>{});
    gpsStatus.textContent='My location · ±'+Math.round(accuracy)+' m';
  };
- if(window.matchMedia('(max-width:700px)').matches)setSheet('half');
+ if(window.matchMedia('(max-width:700px)').matches)setSheet('closed');
 })();
 
 start();
