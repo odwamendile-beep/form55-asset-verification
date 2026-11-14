@@ -48,29 +48,76 @@ input,select{width:100%;padding:12px;border:1px solid #c7d0d3;border-radius:9px;
 #awVoiceSaved{font-size:11px;margin-top:5px}
 #awVoiceSaved button{font-size:10px;padding:3px 6px;margin-left:6px}
 @media(max-width:600px){#map{height:52vh;min-height:350px}.aw-map-heading{align-items:flex-start}}
+
+/* V7: native-feeling map + three-position mobile bottom sheet. Desktop remains V6.9. */
+.aw-sheet{display:contents}
+#awMapTools{position:absolute;right:12px;bottom:15px;display:flex;flex-direction:column;gap:8px;z-index:5}
+#awMapPanel{position:relative}
+#awMapTools button{width:43px;height:43px;border-radius:50%;background:white;color:#07566b;box-shadow:0 2px 9px #0004;font-size:22px;padding:0}
+#awGpsStatus{position:absolute;bottom:12px;left:12px;z-index:5;background:#fffdf5e8;border-radius:7px;font-size:11px;max-width:55%;padding:5px 7px;display:none}
+#awSheetHandle{display:none}
+@media(max-width:700px){
+ html,body{width:100%;height:100%;overflow:hidden;overscroll-behavior:none}
+ body{position:fixed;inset:0}
+ header{position:fixed;left:0;right:0;top:0;z-index:11;padding:7px 12px;pointer-events:none;background:#07566be8}
+ header h1{font-size:13px}header p{font-size:10px;margin:2px 0 0}
+ main{padding:0;max-width:none}
+ #awAuthPanel{position:fixed;top:45px;left:8px;z-index:11;margin:0;padding:5px 8px;border-radius:7px;max-width:220px;background:#fffffff0;box-shadow:0 1px 5px #0002}
+ #awAuthPanel #notice{font-size:9px}#awAuthPanel button{font-size:10px;padding:5px 8px}
+ #workspace{display:block!important}#workspace.hidden{display:none!important}
+ #awMapPanel{position:fixed;inset:0;z-index:1;padding:0;margin:0;border-radius:0;box-shadow:none;background:#dce4e6}
+ #map{position:absolute!important;inset:0;width:100%;height:100%!important;min-height:0!important;border-radius:0}
+ #awMapPanel .aw-map-heading{position:absolute;top:96px;left:9px;right:9px;z-index:6;margin:0;display:block;pointer-events:none}
+ #awMapPanel .aw-map-heading h3{display:none}
+ #awVoiceToolbar{display:flex;align-items:center;gap:5px;pointer-events:auto}
+ #awVoiceButton{font-size:12px!important;padding:10px 12px!important;border-radius:22px}
+ #awVoiceStatus{max-width:190px;background:#fffffff0;padding:5px;border-radius:7px;color:#18323a}
+ #awMapPanel > div[style*="font-size:11px"]{display:none}
+ #awVoiceChoices{position:absolute;z-index:9;top:145px;left:9px;right:9px;max-height:32vh;overflow:auto;box-shadow:0 3px 15px #0003}
+ #awVoiceDictionary{position:absolute;z-index:8;top:142px;left:9px;max-width:85vw;max-height:45vh;overflow:auto;background:#fffffff0;padding:5px 8px;border-radius:8px}
+ #awMapTools{position:fixed;z-index:7;right:12px;bottom:calc(50dvh + 15px)}
+ #awGpsStatus{position:fixed;bottom:calc(50dvh + 12px);z-index:7}
+ #awSheet{position:fixed;left:0;right:0;bottom:0;z-index:12;height:50dvh;max-height:calc(100dvh - 44px);background:white;border-radius:18px 18px 0 0;box-shadow:0 -4px 24px #0004;display:flex;flex-direction:column;transition:height .22s ease;overflow:hidden;touch-action:pan-x}
+ #awSheet[data-position="closed"]{height:54px}
+ #awSheet[data-position="half"]{height:50dvh}
+ #awSheet[data-position="full"]{height:calc(100dvh - 44px)}
+ #awSheetHandle{height:54px;min-height:54px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;touch-action:none;user-select:none;cursor:grab;color:#435766;font-size:12px;font-weight:600}
+ .aw-grip{display:block;width:48px;height:5px;background:#b5c0c8;border-radius:9px}
+ #awSheetContent{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:0 12px 18px}
+ #awSheetContent .panel{box-shadow:none;border:1px solid #e0e7e9;padding:12px;margin-bottom:10px}
+ #awSheetContent .stats{display:flex;flex-wrap:nowrap;gap:6px;padding:7px}
+ #awSheetContent .stat{min-width:0;flex:1;padding:7px;font-size:10px}
+ #awSheetContent .stat b{font-size:17px}
+ #awSheetContent input,#awSheetContent select{font-size:16px}
+ #awSheet[data-position="closed"] #awSheetContent{visibility:hidden;pointer-events:none}
+ #awMapPanel .esri-ui-top-right{top:130px}
+}
 </style>
 </head>
 <body>
 <header>
-<h1>AW FAR SEARCH — V6.9 TEST</h1>
+<h1>AW FAR SEARCH — V7 MOBILE TEST</h1>
 <p>Amatola Water | Facility Mapping & Asset Verification</p>
 </header>
 <main>
-<section class="panel">
+<section class="panel" id="awAuthPanel">
 <div id="notice">Sign in to access the private ArcGIS Online asset register.</div>
 <button id="login">Sign in with ArcGIS Online</button>
 <button id="logout" class="hidden">Sign out</button>
 </section>
 <section id="workspace" class="hidden">
-<div class="panel">
+<div class="panel" id="awMapPanel">
 <div class="aw-map-heading"><h3>Facility map</h3><div id="awVoiceToolbar" class="aw-voice-toolbar" aria-label="Voice navigation">
 <button type="button" id="awVoiceButton">🎤 Voice search</button><span id="awVoiceStatus" aria-live="polite">Ready</span>
 </div></div><div style="font-size:11px;color:#526577;margin:0 0 8px">Say a facility first, then a component or FAR number. Example: “Nahoon Water Treatment Works”, then “flow meter”.</div><div id="awVoiceChoices" class="aw-voice-choices hidden" aria-live="polite"></div>
 <details id="awVoiceDictionary"><summary>Teach voice search a name</summary><div class="aw-teach-row"><input id="awVoicePhrase" placeholder="What Chrome hears, e.g. now on" aria-label="Phrase heard"><select id="awVoiceTarget" aria-label="Correct scheme or facility"><option value="">Select correct name</option></select><button type="button" id="awVoiceTeach">Save phrase</button></div><div id="awVoiceSaved"></div><div id="awVocabularyInfo" style="margin-top:6px">Loading vocabulary...</div><button type="button" id="awExportVocabulary" style="font-size:11px;padding:6px;margin-top:6px">Export AGOL names + voice vocabulary</button></details>
 <div id="map"></div>
+<div id="awMapTools"><button type="button" id="awLocate" aria-label="Locate my position" title="Locate my position">◎</button><button type="button" id="awSheetToggle" aria-label="Show asset search" title="Show asset search">☰</button></div>
+<div id="awGpsStatus" role="status" aria-live="polite"></div>
 
 </div>
-<div class="stats panel">
+<div id="awSheet" class="aw-sheet" data-position="half"><div id="awSheetHandle" role="button" tabindex="0" aria-label="Drag or tap to expand or collapse asset search"><span class="aw-grip"></span><span id="awSheetHint">Find assets · Swipe up for more</span></div>
+<div id="awSheetContent"><div class="stats panel">
 <div class="stat"><b id="facilityCount">0</b>Facilities</div>
 <div class="stat"><b id="assetCount">0</b>FAR components</div>
 <div class="stat"><b id="verifiedCount">0</b>Verified</div>
@@ -91,6 +138,7 @@ input,select{width:100%;padding:12px;border:1px solid #c7d0d3;border-radius:9px;
 <div id="assets">Select a facility on the map or from the list.</div>
 </div>
 
+</div></div>
 </section>
 </main>
 <script>
@@ -1037,6 +1085,71 @@ el("scheme").onchange=awV6ApplyFilter;
 el("facilitySearch").oninput=awV6ApplyFilter;
 el("facility").onchange=e=>{window.awVoiceFacilityFocus=null;window.awVoiceAssetIds=null;el("farSearch").value="";selectFacility(e.target.value,true);};
 el("farSearch").oninput=()=>{window.awVoiceAssetIds=null;renderAssets();if(window.awRefreshMapPanel)window.awRefreshMapPanel();};
+
+// V7 mobile layout, drag sheet and browser GPS. No hosted data is edited.
+(function(){
+ const sheet=document.getElementById('awSheet');
+ const handle=document.getElementById('awSheetHandle');
+ const locate=document.getElementById('awLocate');
+ const toggle=document.getElementById('awSheetToggle');
+ const gpsStatus=document.getElementById('awGpsStatus');
+ const positions=['closed','half','full'];
+ function setSheet(pos){
+   if(!positions.includes(pos))return;
+   sheet.dataset.position=pos;
+   document.getElementById('awSheetHint').textContent=pos==='closed'?'Find assets · Tap to open':pos==='half'?'Find assets · Swipe up for more':'Find assets · Swipe down for map';
+   if(window.matchMedia('(max-width:700px)').matches){
+     const h=pos==='closed'?54:pos==='half'?innerHeight*.5:innerHeight-44;
+     document.getElementById('awMapTools').style.bottom=(h+15)+'px';
+     gpsStatus.style.bottom=(h+12)+'px';
+   }
+ }
+ let startY=null,startPos=null;
+ handle.addEventListener('pointerdown',e=>{startY=e.clientY;startPos=sheet.dataset.position;handle.setPointerCapture(e.pointerId);});
+ handle.addEventListener('pointerup',e=>{
+   if(startY===null)return;
+   const delta=e.clientY-startY;startY=null;
+   if(Math.abs(delta)<25){setSheet(startPos==='half'?'full':startPos==='full'?'closed':'half');return;}
+   const index=positions.indexOf(startPos);
+   setSheet(positions[Math.max(0,Math.min(2,index+(delta<0?1:-1)))]);
+ });
+ handle.addEventListener('pointercancel',()=>{startY=null;});
+ handle.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setSheet(sheet.dataset.position==='full'?'closed':'full');}});
+ toggle.onclick=()=>setSheet(sheet.dataset.position==='closed'?'half':'closed');
+ window.awV7SetSheet=setSheet;
+ window.addEventListener('resize',()=>setSheet(sheet.dataset.position));
+ locate.onclick=()=>{
+   gpsStatus.style.display='block';
+   if(!navigator.geolocation){gpsStatus.textContent='Location is unavailable in this browser.';return;}
+   gpsStatus.textContent='Finding your location…';
+   navigator.geolocation.getCurrentPosition(position=>{
+     const {latitude,longitude,accuracy}=position.coords;
+     if(!view||!Graphic||!Point){gpsStatus.textContent='Map is not ready. Try again.';return;}
+     if(!window.awV7LocationLayer){
+       require(['esri/layers/GraphicsLayer'],GraphicsLayer=>{
+         window.awV7LocationLayer=new GraphicsLayer({title:'My location'});
+         view.map.add(window.awV7LocationLayer);
+         window.awV7DrawLocation(latitude,longitude,accuracy);
+       });
+     }else window.awV7DrawLocation(latitude,longitude,accuracy);
+   },error=>{gpsStatus.textContent=error.code===1?'Location permission denied. Enable it in Chrome settings.': 'Unable to locate you. Check GPS and signal.';},
+   {enableHighAccuracy:true,timeout:15000,maximumAge:0});
+ };
+ window.awV7DrawLocation=(lat,lon,accuracy)=>{
+   const layer=window.awV7LocationLayer;
+   layer.removeAll();
+   const point=new Point({latitude:lat,longitude:lon});
+   layer.add(new Graphic({geometry:point,symbol:{type:'simple-marker',style:'circle',size:14,color:'#1677e9',outline:{color:'#ffffff',width:2}}}));
+   require(['esri/geometry/Circle'],Circle=>{
+     if(!window.awV7LocationLayer)return;
+     layer.add(new Graphic({geometry:new Circle({center:point,radius:Math.max(accuracy,1),radiusUnit:'meters'}),symbol:{type:'simple-fill',color:[22,119,233,.10],outline:{color:[22,119,233,.55],width:1}}}));
+   });
+   view.goTo({center:[lon,lat],zoom:Math.max(view.zoom||15,16)}).catch(()=>{});
+   gpsStatus.textContent='My location · ±'+Math.round(accuracy)+' m';
+ };
+ if(window.matchMedia('(max-width:700px)').matches)setSheet('half');
+})();
+
 start();
 </script>
 </body>
