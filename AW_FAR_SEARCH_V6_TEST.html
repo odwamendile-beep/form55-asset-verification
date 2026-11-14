@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>AW FAR SEARCH V6 TEST</title>
+<title>AW FAR SEARCH V6.1 TEST</title>
 <link rel="icon" href="./icon-192.png">
 <link rel="stylesheet" href="https://js.arcgis.com/4.32/esri/themes/light/main.css">
 <script src="https://js.arcgis.com/4.32/"></script>
@@ -32,11 +32,27 @@ input,select{width:100%;padding:12px;border:1px solid #c7d0d3;border-radius:9px;
 .hidden{display:none!important}
 #notice{font-size:13px;color:#52646b}
 @media(min-width:800px){.columns{display:grid;grid-template-columns:1.1fr 1fr;gap:13px}}
+/* AW_V61_LAYOUT */
+.aw-map-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.aw-map-heading h3{margin:0;font-size:16px}
+.aw-voice-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#awVoiceButton{padding:8px 10px;font-size:12px}
+#awVoiceStatus{font-size:11px;color:#526577;max-width:240px;overflow-wrap:anywhere}
+.aw-voice-choices{padding:9px;background:#f2f6fa;border:1px solid #dbe3ec;border-radius:8px;margin-bottom:8px;font-size:12px}
+.aw-voice-choices button{font-size:11px;padding:6px 8px;margin:4px 4px 0 0}
+#awVoiceDictionary{font-size:11px;color:#526577;margin-bottom:9px}
+#awVoiceDictionary summary{cursor:pointer;display:inline-block;margin-bottom:5px}
+.aw-teach-row{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.aw-teach-row input,.aw-teach-row select{flex:1 1 130px;min-width:0;width:auto;margin:0;padding:7px;font-size:11px}
+.aw-teach-row button{font-size:11px;padding:8px}
+#awVoiceSaved{font-size:11px;margin-top:5px}
+#awVoiceSaved button{font-size:10px;padding:3px 6px;margin-left:6px}
+@media(max-width:600px){#map{height:440px}.aw-map-heading{align-items:flex-start}}
 </style>
 </head>
 <body>
 <header>
-<h1>AW FAR SEARCH — V6 TEST</h1>
+<h1>AW FAR SEARCH — V6.1 TEST</h1>
 <p>Amatola Water | Facility Mapping & Asset Verification</p>
 </header>
 <main>
@@ -61,9 +77,12 @@ input,select{width:100%;padding:12px;border:1px solid #c7d0d3;border-radius:9px;
 </div>
 <div class="columns">
 <div class="panel">
-<h3>Facility map</h3>
+<div class="aw-map-heading"><h3>Facility map</h3><div id="awVoiceToolbar" class="aw-voice-toolbar" aria-label="Voice navigation">
+<button type="button" id="awVoiceButton">🎤 Voice search</button><span id="awVoiceStatus" aria-live="polite">Ready</span>
+</div></div><div id="awVoiceChoices" class="aw-voice-choices hidden" aria-live="polite"></div>
+<details id="awVoiceDictionary"><summary>Teach voice search a name</summary><div class="aw-teach-row"><input id="awVoicePhrase" placeholder="What Chrome hears, e.g. now on" aria-label="Phrase heard"><select id="awVoiceTarget" aria-label="Correct scheme or facility"><option value="">Select correct name</option></select><button type="button" id="awVoiceTeach">Save phrase</button></div><div id="awVoiceSaved"></div></details>
 <div id="map"></div>
-<p id="mapStatus">Red: pending | Orange: in progress | Green: complete</p>
+
 </div>
 <div class="panel">
 <h3 id="selectedTitle">Select a facility</h3>
@@ -408,227 +427,53 @@ awPanel.querySelector("#awCollapse")
  .setAttribute("aria-expanded","false");
 
 
-// AW_V6_FLOATING_CONTROLS
+ // AW_V61_FLOATING_CONTROLS
+ // Compact Current View sits at bottom-right; controls start collapsed.
+ const awCurrentView = awPanel.querySelector("#awContext");
+ if(!awCurrentView)throw Error("Current View missing");
+ const awCurrentViewPanel=document.createElement("div");
+ awCurrentViewPanel.style.cssText="background:rgba(255,255,255,.97);color:#183153;border:1px solid #dce4ec;border-radius:8px;padding:6px 8px;box-shadow:0 2px 9px #0002;width:145px;max-width:40vw;box-sizing:border-box;font:10px Arial,sans-serif;";
+ awCurrentView.style.cssText="line-height:1.25;overflow-wrap:anywhere;font-size:10px";
+ awCurrentViewPanel.appendChild(awCurrentView);
+ view.ui.add(awCurrentViewPanel,"bottom-right");
+ awPanel.style.cssText="width:148px;max-width:42vw;box-sizing:border-box;background:rgba(255,255,255,.97);color:#183153;border:1px solid #dce4ec;border-radius:8px;box-shadow:0 2px 9px #0002;padding:7px;font:10px Arial,sans-serif;";
+ awPanel.querySelector("strong").style.fontSize="11px";
+ awPanel.querySelector("#awPanelBody").style.display="none";
+ awPanel.querySelector("#awCollapse").textContent="+";
+ awPanel.querySelector("#awCollapse").setAttribute("aria-expanded","false");
 
-// Move Current View outside the collapsible map controls.
-const awCurrentView = awPanel.querySelector("#awContext");
-
-if(!awCurrentView){
- throw new Error("Current View element not found");
-}
-
-const awCurrentViewPanel = document.createElement("div");
-
-awCurrentViewPanel.style.cssText =
- "background:rgba(255,255,255,.96);" +
- "color:#183153;border:1px solid #dce4ec;" +
- "border-radius:10px;padding:10px;" +
- "box-shadow:0 3px 12px #0002;" +
- "width:205px;max-width:48vw;" +
- "box-sizing:border-box;font:12px Arial,sans-serif;";
-
-awCurrentView.style.cssText =
- "line-height:1.5;overflow-wrap:anywhere;";
-
-awCurrentViewPanel.appendChild(awCurrentView);
-
-view.ui.add(awCurrentViewPanel,"bottom-right");
-
-// Compact voice control
-const awVoicePanel = document.createElement("div");
-
-awVoicePanel.style.cssText =
- "background:rgba(255,255,255,.96);" +
- "border:1px solid #dce4ec;border-radius:10px;" +
- "padding:7px;box-shadow:0 3px 12px #0002;" +
- "max-width:210px;box-sizing:border-box;";
-
-const awVoiceButton = document.createElement("button");
-awVoiceButton.id = "awVoiceButton";
-awVoiceButton.type = "button";
-awVoiceButton.textContent = "🎤 Voice search";
-awVoiceButton.title = "Search for schemes and facilities by voice";
-
-awVoiceButton.style.cssText =
- "background:#087f91;color:white;" +
- "border:0;border-radius:7px;" +
- "padding:8px 10px;font:12px Arial,sans-serif;" +
- "cursor:pointer;";
-
-const awVoiceStatus = document.createElement("div");
-awVoiceStatus.id = "awVoiceStatus";
-awVoiceStatus.setAttribute("aria-live","polite");
-
-awVoiceStatus.style.cssText =
- "font:11px Arial,sans-serif;color:#526577;" +
- "margin-top:6px;overflow-wrap:anywhere;";
-
-awVoiceStatus.textContent = "Voice assistant ready for setup";
-
-awVoicePanel.append(awVoiceButton,awVoiceStatus);
-view.ui.add(awVoicePanel,"top-left");
-
-
-// AW_V6_VOICE_NAVIGATION
-
-const awSpeechAPI =
- window.SpeechRecognition || window.webkitSpeechRecognition;
-
-function awVoiceNormalise(value){
- return String(value || "")
-  .toLowerCase()
-  .replace(/&/g," and ")
-  .replace(/[^a-z0-9 ]/g," ")
-  .replace(/\\s+/g," ")
-  .trim();
-}
-
-function awVoiceTerms(value){
- return awVoiceNormalise(value)
-  .split(" ")
-  .filter(x=>x.length>2)
-  .filter(x=>![
-   "show","find","take","please","open","navigate",
-   "search","facility","facilities","scheme","the",
-   "for","and","assets","asset","components",
-   "component","water","treatment","works",
-   "station","plant","pump","pumping","inside",
-   "located","currently","want","need","there",
-   "here","with"
-  ].includes(x));
-}
-
-function awVoiceMatchScore(spoken,name){
- const query=awVoiceNormalise(spoken);
- const target=awVoiceNormalise(name);
- if(!target)return 0;
-
- if(query===target)return 100;
-
- // Full facility names embedded in a spoken instruction.
- if(query.includes(target) && target.length>5)return 90;
-
- const terms=awVoiceTerms(name);
- if(!terms.length)return 0;
-
- const spokenTerms=awVoiceTerms(spoken);
- const hits=terms.filter(t=>spokenTerms.includes(t));
-
- if(!hits.length)return 0;
-
- return hits.length/terms.length*60+
-        hits.length/spokenTerms.length*20;
-}
-
-function awVoiceHandleCommand(transcript){
- const spoken=awVoiceNormalise(transcript);
-
- if(!spoken){
-  awVoiceStatus.textContent="No speech recognised.";
-  return;
+ // AW_V61_VOICE_NAVIGATION: page toolbar, not a map widget.
+ const awVoiceButton=el("awVoiceButton"),awVoiceStatus=el("awVoiceStatus"),awVoiceChoices=el("awVoiceChoices");
+ const awSpeechAPI=window.SpeechRecognition||window.webkitSpeechRecognition;
+ const awAliasesDefault={"now on":"Nahoon","nah horn":"Nahoon","nahoon":"Nahoon","lion":"Laing","laying":"Laing","lying":"Laing","sandy lee":"Sandile","sandily":"Sandile","mini ameni":"Mnyameni","many a many":"Mnyameni","rooie krantz":"Rooikrantz","roy krantz":"Rooikrantz","debby":"Debe"};
+ const awAliasKey="aw_form55_voice_aliases_v61";
+ let awAliases={};
+ try{const stored=JSON.parse(localStorage.getItem(awAliasKey)||"{}");if(stored&&typeof stored==="object"&&!Array.isArray(stored))awAliases=stored;}catch(e){}
+ function awNormal(v){return String(v||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/&/g," and ").replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();}
+ const awStop=new Set(["show","find","take","please","open","navigate","search","facility","facilities","scheme","the","for","and","assets","asset","components","component","to","go","me","water","treatment","works","station","plant","pump","pumping","inside","located","want","need","there","here","with","at","in"]);
+ function awCleanCommand(v){return awNormal(v).split(" ").filter(w=>w&&!awStop.has(w)).join(" ");}
+ function awEditDistance(a,b){const x=Array.from(a),y=Array.from(b),dp=Array.from({length:y.length+1},(_,i)=>i);for(let i=1;i<=x.length;i++){let prev=dp[0];dp[0]=i;for(let j=1;j<=y.length;j++){const old=dp[j];dp[j]=Math.min(dp[j]+1,dp[j-1]+1,prev+(x[i-1]===y[j-1]?0:1));prev=old;}}return dp[y.length];}
+ function awCatalog(){return [...Array.from(el("scheme").options).filter(o=>o.value).map(o=>({kind:"scheme",name:o.textContent,value:o.value})),...facilities.map(f=>({kind:"facility",name:f.Facility_Name,value:clean(f.Facility_ID)}))];}
+ function awResolveAlias(spoken){let phrase=awCleanCommand(spoken);const all={...awAliasesDefault,...awAliases};const aliases=Object.entries(all).sort((a,b)=>b[0].length-a[0].length);for(const [from,to] of aliases){const term=awNormal(from);if(term && (phrase===term||phrase.includes(" "+term+" ")||phrase.startsWith(term+" ")||phrase.endsWith(" "+term))){phrase=phrase.replace(new RegExp("(^| )"+term.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"(?= |$)","g")," "+awNormal(to)).trim();}}return phrase;}
+ function awScore(query,name){const q=awResolveAlias(query),n=awCleanCommand(name);if(!q||!n)return 0;if(q===n)return 100;if(q.includes(n)&&n.length>=4)return 95;if(n.includes(q)&&q.length>=4)return 86;const qt=q.split(" "),nt=n.split(" ");const hits=nt.filter(t=>qt.includes(t));const tokenScore=hits.length?Math.round(60*hits.length/nt.length+20*hits.length/qt.length):0;const distance=awEditDistance(q,n),ratio=1-distance/Math.max(q.length,n.length);return Math.max(tokenScore,ratio>=.72?Math.round(ratio*80):0);}
+ function awSetStatus(t){awVoiceStatus.textContent=t;}
+ function awShowChoices(items,caption){awVoiceChoices.replaceChildren();const lead=document.createElement("div");lead.textContent=caption;awVoiceChoices.append(lead);for(const item of items.slice(0,6)){const b=document.createElement("button");b.type="button";b.textContent=(item.kind==="scheme"?"Scheme: ":"Facility: ")+item.name;b.onclick=()=>{awVoiceChoices.classList.add("hidden");awNavigate(item);};awVoiceChoices.append(b);}awVoiceChoices.classList.remove("hidden");}
+ function awNavigate(item){if(item.kind==="scheme"){el("facilitySearch").value="";el("scheme").value=item.value;awV6ApplyFilter();awSetStatus("Showing scheme: "+item.name);}else{selectFacility(item.value,true);awSetStatus("Selected facility: "+item.name);}}
+ function awVoiceHandle(transcripts){const entries=awCatalog();let ranked=[];for(const transcript of transcripts){for(const entry of entries){const score=awScore(transcript,entry.name);if(score>=57){const existing=ranked.find(r=>r.kind===entry.kind&&r.value===entry.value);if(existing)existing.score=Math.max(existing.score,score);else ranked.push({...entry,score});}}}ranked.sort((a,b)=>b.score-a.score|| (a.kind==="scheme"?-1:1));const heard=transcripts[0]||"";el("awVoicePhrase").value=heard;if(!ranked.length){awSetStatus('Heard: "'+heard+'" — no match');awShowChoices(entries.filter(e=>e.kind==="scheme"),"No confident match. Choose a scheme or teach this phrase below.");return;}const best=ranked[0];const near=ranked.filter(x=>x.score>=best.score-8);const schemeExact=near.find(x=>x.kind==="scheme"&&x.score>=95);if(schemeExact){awVoiceChoices.classList.add("hidden");awNavigate(schemeExact);return;}if(near.length>1){awSetStatus('Heard: "'+heard+'"');awShowChoices(near,"Several matches. Choose the correct one:");return;}if(best.score>=72){awVoiceChoices.classList.add("hidden");awNavigate(best);}else{awSetStatus('Heard: "'+heard+'"');awShowChoices(ranked,"Please confirm the matching name:");}}
+ function awPopulateTargets(){const target=el("awVoiceTarget");target.replaceChildren(new Option("Select correct name",""));for(const entry of awCatalog().sort((a,b)=>a.kind.localeCompare(b.kind)||a.name.localeCompare(b.name))){const option=new Option((entry.kind==="scheme"?"Scheme: ":"Facility: ")+entry.name,entry.name);target.add(option);}}
+ function awRenderSaved(){const div=el("awVoiceSaved");div.replaceChildren();const entries=Object.entries(awAliases);if(!entries.length){div.textContent="Custom phrases are saved in this browser only.";return;}for(const [from,to] of entries){const line=document.createElement("div");line.textContent=from+" → "+to;const remove=document.createElement("button");remove.textContent="Remove";remove.type="button";remove.onclick=()=>{delete awAliases[from];localStorage.setItem(awAliasKey,JSON.stringify(awAliases));awRenderSaved();};line.append(remove);div.append(line);}}
+ el("awVoiceTeach").onclick=()=>{const phrase=awNormal(el("awVoicePhrase").value),target=el("awVoiceTarget").value;if(!phrase||!target){awSetStatus("Enter the words Chrome heard and select the correct name.");return;}awAliases[phrase]=target;try{localStorage.setItem(awAliasKey,JSON.stringify(awAliases));awSetStatus('Saved: "'+phrase+'" → '+target);}catch(e){awSetStatus("Could not save this phrase in browser storage.");}awRenderSaved();};
+ window.awV61PopulateTargets=awPopulateTargets;awPopulateTargets();awRenderSaved();
+ if(!awSpeechAPI){awVoiceButton.disabled=true;awSetStatus("Speech recognition not supported. Use Chrome or Edge.");}else{
+ const recognition=new awSpeechAPI();recognition.lang="en-ZA";recognition.interimResults=false;recognition.maxAlternatives=5;recognition.continuous=false;
+ awVoiceButton.onclick=()=>{try{recognition.start();}catch(e){awSetStatus("Microphone: "+e.message);}};
+ recognition.onstart=()=>{awVoiceButton.textContent="🎤 Listening...";awSetStatus("Say a scheme or facility name");};
+ recognition.onresult=event=>{const alternatives=Array.from(event.results[0]||[]).map(r=>r.transcript).filter(Boolean);awVoiceHandle(alternatives);};
+ recognition.onerror=event=>awSetStatus("Microphone: "+event.error);
+ recognition.onend=()=>{awVoiceButton.textContent="🎤 Voice search";};
  }
 
- const ranked=facilities
-  .map(f=>({
-   facility:f,
-   score:awVoiceMatchScore(spoken,f.Facility_Name)
-  }))
-  .filter(x=>x.score>=55)
-  .sort((a,b)=>b.score-a.score);
-
- if(ranked.length){
-  const best=ranked[0];
-  const second=ranked[1];
-
-  if(second && best.score-second.score<12){
-   awVoiceStatus.textContent=
-    "Several facilities match. Please say the full facility name.";
-   return;
-  }
-
-  selectFacility(best.facility.Facility_ID,true);
-
-  awVoiceStatus.textContent=
-   "Selected: "+best.facility.Facility_Name;
-  return;
- }
-
- const schemeSelect=el("scheme");
-
- if(schemeSelect){
-  const options=Array.from(schemeSelect.options)
-   .filter(o=>o.value);
-
-  const matches=options.filter(o=>{
-   const name=awVoiceNormalise(o.textContent);
-   return name.length>2 && spoken.includes(name);
-  });
-
-  if(matches.length===1){
-   schemeSelect.value=matches[0].value;
-   awV6ApplyFilter();
-
-   awVoiceStatus.textContent=
-    "Showing scheme: "+matches[0].textContent;
-   return;
-  }
- }
-
- awVoiceStatus.textContent=
-  "No confident match. Try saying the full facility or scheme name.";
-}
-
-if(!awSpeechAPI){
- awVoiceStatus.textContent=
-  "Voice recognition is not supported in this browser.";
- awVoiceButton.disabled=true;
- awVoiceButton.style.opacity="0.55";
-}else{
- const awRecognition=new awSpeechAPI();
-
- awRecognition.lang="en-ZA";
- awRecognition.interimResults=false;
- awRecognition.maxAlternatives=1;
- awRecognition.continuous=false;
-
- awVoiceButton.onclick=function(){
-  try{
-   awRecognition.start();
-  }catch(error){
-   awVoiceStatus.textContent=
-    "Could not start microphone: "+error.message;
-  }
- };
-
- awRecognition.onstart=function(){
-  awVoiceButton.textContent="🎤 Listening...";
-  awVoiceStatus.textContent=
-   "Say a scheme or facility name.";
- };
-
- awRecognition.onresult=function(event){
-  const transcript=
-   event.results[0][0].transcript;
-
-  awVoiceStatus.textContent=
-   "Heard: "+transcript;
-
-  awVoiceHandleCommand(transcript);
- };
-
- awRecognition.onerror=function(event){
-  awVoiceStatus.textContent=
-   "Microphone: "+event.error;
- };
-
- awRecognition.onend=function(){
-  awVoiceButton.textContent="🎤 Voice search";
- };
-}
-
-
-
-const awControl = id => awPanel.querySelector("#" + id);
+ const awControl = id => awPanel.querySelector("#" + id);
 
 awControl("awBasemap").onchange = function(){
  map.basemap = this.value;
@@ -670,7 +515,7 @@ function awRefreshMapPanel(){
 
  const heading = document.createElement("strong");
  heading.textContent = "Current view";
- heading.style.fontSize = "12px";
+ heading.style.fontSize = "10px";
 
  const refresh = document.createElement("button");
  refresh.type = "button";
@@ -679,8 +524,8 @@ function awRefreshMapPanel(){
  refresh.setAttribute("aria-label","Clear selected facility");
  refresh.style.cssText =
   "border:1px solid #dbe3ec;background:white;" +
-  "border-radius:6px;padding:2px 7px;" +
-  "color:#183153;cursor:pointer;font-size:15px";
+  "border-radius:6px;padding:1px 5px;" +
+  "color:#183153;cursor:pointer;font-size:12px";
 
  refresh.onclick = awClearFacilitySelection;
 
@@ -698,10 +543,10 @@ function awRefreshMapPanel(){
   const count = facilityAssets(selected).length;
 
   addLine(count.toLocaleString()+" FAR components",
-   "font-size:15px;font-weight:bold;margin-bottom:5px");
+   "font-size:12px;font-weight:bold;margin-bottom:3px");
 
   addLine(selected.Facility_Name || "Selected facility",
-   "font-size:11px;color:#526577;overflow-wrap:anywhere");
+   "font-size:10px;color:#526577;overflow-wrap:anywhere");
 
   return;
  }
@@ -717,7 +562,7 @@ function awRefreshMapPanel(){
  addLine(
   visible.length.toLocaleString() +
   (visible.length===1 ? " facility visible" : " facilities visible"),
-  "font-size:14px;font-weight:bold;margin-bottom:5px"
+  "font-size:12px;font-weight:bold;margin-bottom:3px"
  );
 
  if(visible.length===1){
@@ -728,7 +573,7 @@ function awRefreshMapPanel(){
 
   if(facility){
    addLine(facility.Facility_Name,
-    "font-size:11px;color:#526577;" +
+    "font-size:10px;color:#526577;" +
     "border-top:1px solid #e5eaf0;" +
     "padding-top:6px;overflow-wrap:anywhere");
   }
@@ -793,6 +638,7 @@ async function start(){
   el("workspace").classList.remove("hidden");
   el("notice").textContent="Online asset register loaded.";
   await initMap();
+  if(window.awV61PopulateTargets)window.awV61PopulateTargets();
   renderFacilities();
  }catch(e){
   el("notice").textContent="Loading failed: "+e.message;
