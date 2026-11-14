@@ -6,7 +6,82 @@
 <title>AW FAR SEARCH V7.1 FIELD GREEN TEST</title>
 <link rel="icon" href="./icon-192.png">
 <link rel="stylesheet" href="https://js.arcgis.com/4.32/esri/themes/light/main.css">
-<script src="https://js.arcgis.com/4.32/"></script>
+<script src="https://js.arcgis.com/4.32/">
+// V7.7: Historical images are requested only from the selected registered FAR row.
+// No public URLs, duplicate records or changes to Survey123 submissions.
+let awV77ImageUrls=[];
+let awV77Request=0;
+function awV77CloseAsset(){
+ awV77Request++;
+ awV77ImageUrls.forEach(u=>URL.revokeObjectURL(u));
+ awV77ImageUrls=[];
+ const panel=el("awAssetDetail");
+ if(panel){panel.hidden=true;panel.replaceChildren();}
+}
+function awV77AddDetail(dl,key,value){
+ const dt=document.createElement("dt"),dd=document.createElement("dd");
+ dt.textContent=key;dd.textContent=clean(value).trim()||"Not recorded";
+ dl.append(dt,dd);
+}
+async function awV77AttachmentList(objectId){
+ const body=new URLSearchParams({f:"json",token});
+ const r=await fetch(BASE+"/1/"+encodeURIComponent(objectId)+"/attachments",{method:"POST",body,cache:"no-store"});
+ if(!r.ok)throw Error("Attachment request failed (HTTP "+r.status+")");
+ const j=await r.json();
+ if(j.error)throw Error(j.error.message||"Attachment access failed");
+ return j.attachmentInfos||[];
+}
+async function awV77OpenAsset(a){
+ awV77CloseAsset();
+ const req=awV77Request;
+ const panel=el("awAssetDetail");
+ if(!panel)return;
+ panel.hidden=false;
+ const head=document.createElement("div");head.className="aw-detail-header";
+ const heading=document.createElement("strong");heading.textContent="Asset · "+(a.FAR_ID||"No FAR number");
+ const close=document.createElement("button");close.type="button";close.textContent="Close";close.onclick=awV77CloseAsset;
+ head.append(heading,close);panel.append(head);
+ const dl=document.createElement("dl");
+ [["FAR number",a.FAR_ID],["Description",a.AssetName],["Component type",a.ComponentType],["Building",a.Building],["Floor",a.Floor],["Room",a.Room],["Verification status",a.Verification_Status||"Pending"]].forEach(([k,v])=>awV77AddDetail(dl,k,v));
+ panel.append(dl);
+ const photoTitle=document.createElement("strong");photoTitle.textContent="Historical photographs";panel.append(photoTitle);
+ const note=document.createElement("p");note.className="aw-photo-note";note.textContent="Checking attachments on this FAR record…";panel.append(note);
+ const grid=document.createElement("div");grid.className="aw-photo-grid";panel.append(grid);
+ if(a.Survey123_Edit_URL){
+  const link=document.createElement("a");link.className="aw-verify-link";
+  link.href=a.Survey123_Edit_URL;link.textContent="Verify This Asset in Survey123";
+  panel.append(link);
+ }else{
+  const noLink=document.createElement("p");noLink.className="aw-photo-note";
+  noLink.textContent="No Survey123 edit link is recorded for this component.";panel.append(noLink);
+ }
+ panel.scrollIntoView({behavior:"smooth",block:"nearest"});
+ const oid=a.OBJECTID??a.ObjectID??a.objectid;
+ if(oid==null){note.textContent="Attachment lookup unavailable: component record has no Object ID.";return;}
+ try{
+  const infos=await awV77AttachmentList(oid);
+  if(req!==awV77Request)return;
+  const photos=infos.filter(i=>/^image\//i.test(i.contentType||"")||/\.(jpe?g|png|webp|gif)$/i.test(i.name||""));
+  if(!photos.length){note.textContent="No image attachments found on this FAR component record. The Survey123 photo may be stored on a related record or in a different field.";return;}
+  note.textContent=photos.length+" existing image attachment(s) on this FAR record.";
+  for(const i of photos){
+   if(req!==awV77Request)return;
+   try{
+    const url=BASE+"/1/"+encodeURIComponent(oid)+"/attachments/"+encodeURIComponent(i.id)+"?"+new URLSearchParams({token});
+    const response=await fetch(url,{cache:"no-store"});
+    if(!response.ok)throw Error("HTTP "+response.status);
+    const blob=await response.blob();
+    if(req!==awV77Request)return;
+    const local=URL.createObjectURL(blob);awV77ImageUrls.push(local);
+    const anchor=document.createElement("a");anchor.href=local;anchor.target="_blank";anchor.rel="noopener noreferrer";
+    const img=document.createElement("img");img.src=local;img.alt="Historical asset photograph: "+(i.name||a.FAR_ID);img.loading="lazy";
+    const label=document.createElement("span");label.textContent=i.name||"View photo";
+    anchor.append(img,label);grid.append(anchor);
+   }catch(err){const m=document.createElement("small");m.textContent="Could not load "+(i.name||"photo")+": "+err.message;grid.append(m);}
+  }
+ }catch(err){if(req===awV77Request)note.textContent="Could not check historical attachments: "+err.message;}
+}
+</script>
 <style>
 :root{font-family:Arial,sans-serif;color:#18323a;background:#f2f5f6}
 *{box-sizing:border-box}
@@ -153,6 +228,20 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
  #awMapPanel .esri-ui-top-left{top:82px;left:12px}
  #awSheetHandle{background:#f1f9f1}
 }
+
+/* V7.7 asset details — scoped to the existing sliding panel */
+#awAssetDetail[hidden]{display:none!important}
+#awAssetDetail{margin-top:12px;padding:14px;background:#f2faf3;border:1px solid #a9d1b4;border-radius:14px;color:#17382c}
+#awAssetDetail .aw-detail-header{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+#awAssetDetail .aw-detail-header button{background:#e2f1e6;color:#174a34;border:1px solid #aacfb7;padding:7px 11px}
+#awAssetDetail dl{display:grid;grid-template-columns:minmax(100px,36%) 1fr;gap:8px 10px;margin:12px 0;font-size:13px}
+#awAssetDetail dt{color:#4d6b5b}#awAssetDetail dd{margin:0;overflow-wrap:anywhere;font-weight:600}
+#awAssetDetail .aw-photo-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:9px;margin:10px 0}
+#awAssetDetail .aw-photo-grid img{width:100%;max-height:200px;object-fit:contain;border-radius:8px;background:#e6eee9}
+#awAssetDetail .aw-photo-grid a{display:block;text-align:center;color:#164b36;font-size:12px;overflow-wrap:anywhere}
+#awAssetDetail .aw-verify-link{display:block;background:#176744;color:white;padding:13px;border-radius:10px;text-align:center;font-weight:700;margin-top:12px;text-decoration:none}
+#awAssetDetail .aw-photo-note{font-size:12px;color:#53695d}
+#assets .aw-detail-open{margin-top:8px;background:#1b6a49;color:white;border:0;border-radius:9px;padding:9px 12px;font-weight:600}
 </style>
 </head>
 <body>
@@ -197,6 +286,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 <p id="progress"></p>
 <input id="farSearch" placeholder="Search FAR, component, building or room">
 <div id="assets">Select a facility on the map or from the list.</div>
+<div id="awAssetDetail" class="aw-asset-detail" hidden aria-live="polite"></div>
 </div>
 
 </div></div>
@@ -329,6 +419,7 @@ function renderFacilities(){
  renderAssets();
 }
 function selectFacility(id,zoom=false){
+ awV77CloseAsset();
  selected=facilities.find(f=>clean(f.Facility_ID)===clean(id))||null;
  if(selected){
   el("scheme").value=selected.Scheme||"";
@@ -372,6 +463,12 @@ function renderAssets(){
    " | Room: "+(a.Room||"-")+
    " | "+(a.Verification_Status||"PENDING");
   card.append(title,desc,info);
+  const detailButton=document.createElement("button");
+  detailButton.type="button";
+  detailButton.className="aw-detail-open";
+  detailButton.textContent="View asset details & historical photos";
+  detailButton.addEventListener("click",()=>awV77OpenAsset(a));
+  card.append(detailButton);
   if(a.Survey123_Edit_URL){
    const link=document.createElement("a");
    link.href=a.Survey123_Edit_URL;
@@ -1177,7 +1274,7 @@ async function start(){
  try{
   [facilities,components]=await Promise.all([
    fetchAll(0,"Facility_ID,Facility_Name,Scheme,Latitude,Longitude"),
-   fetchAll(1,"Facility_ID,FAR_ID,ComponentType,AssetName,Building,Floor,Room,Verification_Status,Completion_Flag,Survey123_Edit_URL")
+   fetchAll(1,"*")
   ]);
   // Scoped KPI values are updated by renderFacilities after loading.
   const schemes=[...new Set(facilities.map(f=>f.Scheme).filter(Boolean))].sort();
