@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>AW FAR SEARCH</title>
+<link rel="icon" href="./icon-192.png">
+<link rel="stylesheet" href="https://js.arcgis.com/4.32/esri/themes/light/main.css">
+<script src="https://js.arcgis.com/4.32/"></script>
+<style>
+:root{font-family:Arial,sans-serif;color:#18323a;background:#f2f5f6}
+*{box-sizing:border-box}
+body{margin:0}
+header{background:#07566b;color:white;padding:16px 18px}
+header h1{font-size:23px;margin:0}
+header p{margin:6px 0 0;font-size:13px}
+main{max-width:1100px;margin:auto;padding:14px}
+.panel{background:white;border-radius:13px;padding:15px;margin-bottom:13px;box-shadow:0 2px 9px #0001}
+button,select,input{font:inherit}
+button{border:0;border-radius:9px;background:#087f91;color:white;padding:12px;cursor:pointer}
+button:disabled{opacity:.5}
+input,select{width:100%;padding:12px;border:1px solid #c7d0d3;border-radius:9px;margin:5px 0 10px}
+#map{height:390px;border-radius:10px;overflow:hidden}
+#assets{max-height:450px;overflow:auto}
+.asset{padding:13px;border:1px solid #dce3e6;border-radius:10px;margin:9px 0}
+.asset strong{display:block;margin-bottom:6px}
+.asset small{display:block;color:#52646b;margin:5px 0}
+.asset a{display:inline-block;background:#087f91;color:white;padding:10px;border-radius:8px;text-decoration:none;margin-top:8px}
+.stats{display:flex;gap:10px;flex-wrap:wrap}
+.stat{background:#edf5f6;padding:12px;border-radius:9px;flex:1;min-width:100px}
+.stat b{display:block;font-size:22px}
+.hidden{display:none!important}
+#notice{font-size:13px;color:#52646b}
+@media(min-width:800px){.columns{display:grid;grid-template-columns:1.1fr 1fr;gap:13px}}
+</style>
+</head>
+<body>
+<header>
+<h1>AW FAR SEARCH</h1>
+<p>Amatola Water | Facility Mapping & Asset Verification</p>
+</header>
+<main>
+<section class="panel">
+<div id="notice">Sign in to access the private ArcGIS Online asset register.</div>
+<button id="login">Sign in with ArcGIS Online</button>
+<button id="logout" class="hidden">Sign out</button>
+</section>
+<section id="workspace" class="hidden">
+<div class="stats panel">
+<div class="stat"><b id="facilityCount">0</b>Facilities</div>
+<div class="stat"><b id="assetCount">0</b>FAR components</div>
+<div class="stat"><b id="verifiedCount">0</b>Verified</div>
+</div>
+<div class="panel">
+<label>Scheme</label>
+<select id="scheme"><option value="">All schemes</option></select>
+<label>Find facility</label>
+<input id="facilitySearch" placeholder="Search facility name">
+<label>Facility</label>
+<select id="facility"><option value="">Select a facility</option></select>
+</div>
+<div class="columns">
+<div class="panel">
+<h3>Facility map</h3>
+<div id="map"></div>
+<p id="mapStatus">Red: pending | Orange: in progress | Green: complete</p>
+</div>
+<div class="panel">
+<h3 id="selectedTitle">Select a facility</h3>
+<p id="progress"></p>
+<input id="farSearch" placeholder="Search FAR, component, building or room">
+<div id="assets">Select a facility on the map or from the list.</div>
+</div>
+</div>
+</section>
+</main>
+<script>
+const CLIENT_ID="StEmFuelJqt2kLlL";
+const REDIRECT="https://odwamendile-beep.github.io/form55-asset-verification/";
+const BASE="https://services.arcgis.com/C6rxPmErTlCKv9Qe/arcgis/rest/services/AW_Asset_Verification_Field_2026/FeatureServer";
+const PORTAL="https://www.arcgis.com";
+let token=null,expiry=0,facilities=[],components=[],selected=null;
+let view=null,graphicsLayer=null,Graphic=null,Point=null;
+const el=id=>document.getElementById(id);
+const clean=v=>String(v??"");
+const norm=v=>clean(v).trim().toLowerCase();
+const esc=v=>clean(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const isVerified=a=>{
+  const s=norm(a.Verification_Status);
+  return ["verified","complete","completed"].includes(s) ||
+         a.Completion_Flag===1 ||
+         norm(a.Completion_Flag)==="yes";
+};
+function signIn(){
+ const state=crypto.randomUUID();
+ sessionStorage.setItem("aw_far_oauth_state",state);
+ const q=new URLSearchParams({
+  client_id:CLIENT_ID,response_type:"token",
+  redirect_uri:REDIRECT,expiration:"120",state
+ });
+ location.href=PORTAL+"/sharing/rest/oauth2/authorize?"+q;
+}
+el("login").onclick=signIn;
+el("logout").onclick=()=>{
+ token=null;expiry=0;sessionStorage.removeItem("aw_far_auth");
+ location.href=REDIRECT;
+};
+function restore(){
+ const hash=new URLSearchParams(location.hash.slice(1));
+ if(hash.has("access_token")){
+  const expected=sessionStorage.getItem("aw_far_oauth_state");
+  if(!expected||expected!==hash.get("state")){
+   el("notice").textContent="Login state verification failed. Please sign in again.";
+   history.replaceState(null,"",location.pathname);
+   return;
+  }
+  token=hash.get("access_token");
+  expiry=Date.now()+Number(hash.get("expires_in")||0)*1000;
+  sessionStorage.setItem("aw_far_auth",JSON.stringify({token,expiry}));
+  sessionStorage.removeItem("aw_far_oauth_state");
+  history.replaceState(null,"",location.pathname);
+ }else{
+  try{
+   const saved=JSON.parse(sessionStorage.getItem("aw_far_auth")||"null");
+   if(saved&&saved.expiry>Date.now()+60000){
+    token=saved.token;expiry=saved.expiry;
+   }
+  }catch(e){}
+ }
+}
+async function query(layer,params){
+ const body=new URLSearchParams({f:"json",token,...params});
+ const response=await fetch(BASE+"/"+layer+"/query",{
+  method:"POST",body,cache:"no-store"
+ });
+ if(!response.ok)throw Error("ArcGIS HTTP "+response.status);
+ const data=await response.json();
+ if(data.error)throw Error(data.error.message);
+ return data;
+}
+async function fetchAll(layer,fields){
+ const ids=await query(layer,{where:"1=1",returnIdsOnly:"true"});
+ const keys=ids.objectIds||[],out=[];
+ for(let i=0;i<keys.length;i+=150){
+  const data=await query(layer,{
+   objectIds:keys.slice(i,i+150).join(","),
+   outFields:fields,returnGeometry:"false"
+  });
+  out.push(...(data.features||[]).map(f=>f.attributes));
+ }
+ return out;
+}
+function filteredFacilities(){
+ const scheme=el("scheme").value;
+ const term=norm(el("facilitySearch").value);
+ return facilities.filter(f=>
+  (!scheme||f.Scheme===scheme)&&
+  (!term||norm(f.Facility_Name).includes(term))
+ );
+}
+function facilityAssets(f){
+ return components.filter(a=>clean(a.Facility_ID)===clean(f.Facility_ID));
+}
+function status(f){
+ const arr=facilityAssets(f),done=arr.filter(isVerified).length;
+ return {total:arr.length,done,
+  color:arr.length&&done===arr.length?"#198754":done>0?"#ef8b23":"#c63838"};
+}
+function renderFacilities(){
+ const visible=filteredFacilities();
+ const select=el("facility");
+ select.replaceChildren(new Option("Select a facility",""));
+ visible.sort((a,b)=>clean(a.Facility_Name).localeCompare(clean(b.Facility_Name)));
+ for(const f of visible){
+  select.add(new Option(f.Facility_Name,f.Facility_ID));
+ }
+ if(selected&&visible.some(f=>f.Facility_ID===selected.Facility_ID))
+  select.value=selected.Facility_ID;
+ else selected=null;
+ renderMap(visible);
+ renderAssets();
+}
+function selectFacility(id){
+ selected=facilities.find(f=>clean(f.Facility_ID)===clean(id))||null;
+ if(selected){
+  el("scheme").value=selected.Scheme||"";
+  el("facilitySearch").value="";
+ }
+ renderFacilities();
+ if(selected&&view){
+  const lat=Number(selected.Latitude),lon=Number(selected.Longitude);
+  if(Number.isFinite(lat)&&Number.isFinite(lon))
+   view.goTo({center:[lon,lat],zoom:16}).catch(()=>{});
+ }
+}
+function renderAssets(){
+ const target=el("assets");
+ target.replaceChildren();
+ if(!selected){
+  el("selectedTitle").textContent="Select a facility";
+  el("progress").textContent="";
+  target.textContent="Tap a facility pin or select a facility above.";
+  return;
+ }
+ const arr=facilityAssets(selected);
+ const done=arr.filter(isVerified).length;
+ el("selectedTitle").textContent=selected.Facility_Name;
+ el("progress").textContent=done+" of "+arr.length+" components verified";
+ const term=norm(el("farSearch").value);
+ const matches=arr.filter(a=>[
+  a.FAR_ID,a.ComponentType,a.AssetName,a.Building,a.Floor,a.Room
+ ].some(v=>norm(v).includes(term)));
+ if(!matches.length){target.textContent="No matching components.";return;}
+ for(const a of matches){
+  const card=document.createElement("div");
+  card.className="asset";
+  const title=document.createElement("strong");
+  title.textContent=a.FAR_ID||"No FAR number";
+  const desc=document.createElement("div");
+  desc.textContent=a.ComponentType||a.AssetName||"Component";
+  const info=document.createElement("small");
+  info.textContent="Building: "+(a.Building||"-")+
+   " | Floor: "+(a.Floor||"-")+
+   " | Room: "+(a.Room||"-")+
+   " | "+(a.Verification_Status||"PENDING");
+  card.append(title,desc,info);
+  if(a.Survey123_Edit_URL){
+   const link=document.createElement("a");
+   link.href=a.Survey123_Edit_URL;
+   link.textContent="Verify Asset (existing form)";
+   card.append(link);
+  }
+  target.append(card);
+ }
+}
+function renderMap(list){
+ if(!graphicsLayer||!Graphic||!Point)return;
+ graphicsLayer.removeAll();
+ for(const f of list){
+  const lat=Number(f.Latitude),lon=Number(f.Longitude);
+  if(!Number.isFinite(lat)||!Number.isFinite(lon))continue;
+  const s=status(f);
+  graphicsLayer.add(new Graphic({
+   geometry:new Point({longitude:lon,latitude:lat}),
+   symbol:{type:"simple-marker",style:"circle",size:12,
+    color:s.color,outline:{color:"white",width:1.5}},
+   attributes:{fid:f.Facility_ID}
+  }));
+ }
+}
+async function initMap(){
+ return new Promise((resolve,reject)=>{
+  require([
+   "esri/Map","esri/views/MapView","esri/layers/GraphicsLayer",
+   "esri/Graphic","esri/geometry/Point"
+  ],(Map,MapView,GraphicsLayer,G,P)=>{
+   Graphic=G;Point=P;
+   graphicsLayer=new GraphicsLayer();
+   const map=new Map({basemap:"streets-vector",layers:[graphicsLayer]});
+   view=new MapView({container:"map",map,center:[27.3,-32.9],zoom:8});
+   view.on("click",async event=>{
+    const hit=await view.hitTest(event);
+    const found=hit.results.find(r=>r.graphic?.layer===graphicsLayer);
+    if(found)selectFacility(found.graphic.attributes.fid);
+   });
+   view.when(resolve,reject);
+  },reject);
+ });
+}
+async function start(){
+ restore();
+ if(!token||expiry<=Date.now()+60000)return;
+ el("login").classList.add("hidden");
+ el("logout").classList.remove("hidden");
+ el("notice").textContent="Signed in. Loading facilities and FAR components...";
+ try{
+  [facilities,components]=await Promise.all([
+   fetchAll(0,"Facility_ID,Facility_Name,Scheme,Latitude,Longitude"),
+   fetchAll(1,"Facility_ID,FAR_ID,ComponentType,AssetName,Building,Floor,Room,Verification_Status,Completion_Flag,Survey123_Edit_URL")
+  ]);
+  el("facilityCount").textContent=facilities.length;
+  el("assetCount").textContent=components.length;
+  el("verifiedCount").textContent=components.filter(isVerified).length;
+  const schemes=[...new Set(facilities.map(f=>f.Scheme).filter(Boolean))].sort();
+  for(const s of schemes)el("scheme").add(new Option(s,s));
+  el("workspace").classList.remove("hidden");
+  el("notice").textContent="Online asset register loaded.";
+  await initMap();
+  renderFacilities();
+ }catch(e){
+  el("notice").textContent="Loading failed: "+e.message;
+  console.error(e);
+ }
+}
+el("scheme").onchange=renderFacilities;
+el("facilitySearch").oninput=renderFacilities;
+el("facility").onchange=e=>selectFacility(e.target.value);
+el("farSearch").oninput=renderAssets;
+start();
+</script>
+</body>
+</html>
