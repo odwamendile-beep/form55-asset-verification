@@ -129,11 +129,35 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
  #awMapPanel .esri-ui-top-right > *:not(:first-child){display:none}
  #awMapTools button{width:48px;height:48px}
 }
+
+/* V7.2: Map-only canvas on phones. Controls live in bottom-sheet tabs. */
+#awMobileTabs{display:none}
+@media(max-width:700px){
+ #awMobileTabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:0 0 10px;position:sticky;top:0;z-index:3;background:#f1f9f1;padding:7px 0}
+ #awMobileTabs button{padding:11px 3px;font-size:12px;border-radius:10px;background:#d9efdf;color:#174632;border:1px solid #9dc9ab}
+ #awMobileTabs button[aria-selected="true"]{background:#17533d;color:#fff}
+ #awSheetContent .aw-tab-content[hidden]{display:none!important}
+ #awSheetContent .aw-tab-content{padding:2px 0 14px}
+ #awSheetContent #awVoiceToolbar{position:static!important;display:flex!important;flex-wrap:wrap;gap:8px;pointer-events:auto}
+ #awSheetContent #awVoiceChoices,#awSheetContent #awVoiceDictionary{position:static!important;max-height:none!important;max-width:none!important;box-shadow:none!important;background:transparent!important;padding:8px 0!important}
+ #awSheetContent #awMapTools{position:static!important;display:flex!important;flex-direction:row!important;gap:10px;align-items:center}
+ #awSheetContent #awMapTools #awSheetToggle{display:none!important}
+ #awSheetContent #awGpsStatus{position:static!important;max-width:none!important;margin:8px 0}
+ #awSheetContent #awExternalMapControls{display:block!important;position:static!important;width:auto!important;max-width:none!important;background:#f4fbf5!important;color:#17382c!important;border:1px solid #cbe3d1!important;box-shadow:none!important;padding:12px!important;font-size:13px!important}
+ #awSheetContent #awExternalMapControls #awPanelBody{display:block!important}
+ #awSheetContent #awExternalMapControls #awCollapse{display:none!important}
+ #awSheetContent #awExternalMapControls select{width:100%;font-size:16px}
+ #awSheetContent #awExternalCurrentView{display:block!important;position:static!important;width:auto!important;max-width:none!important;margin-top:10px;background:#e8f5e9!important;color:#17382c!important}
+ #awMapPanel .aw-map-heading,#awMapPanel #awVoiceDictionary,#awMapPanel #awVoiceChoices,#awMapPanel #awMapTools,#awMapPanel #awGpsStatus{display:none!important}
+ #awMapPanel .esri-ui-top-right,#awMapPanel .esri-ui-bottom-right{display:none!important}
+ #awMapPanel .esri-ui-top-left{top:82px;left:12px}
+ #awSheetHandle{background:#f1f9f1}
+}
 </style>
 </head>
 <body>
 <header>
-<h1>AW FAR SEARCH — V7.1 FIELD GREEN TEST</h1>
+<h1>AW FAR SEARCH — V7.2 CLEAN MAP TEST</h1>
 <p>Amatola Water | Facility Mapping & Asset Verification</p>
 </header>
 <main>
@@ -1066,6 +1090,7 @@ async function start(){
   el("workspace").classList.remove("hidden");
   el("notice").textContent="Online asset register loaded.";
   await initMap();
+  awV72SetupCleanMap();
   if(window.awV61PopulateTargets)window.awV61PopulateTargets();
   renderFacilities();
  }catch(e){
@@ -1187,6 +1212,50 @@ el("farSearch").oninput=()=>{window.awVoiceAssetIds=null;renderAssets();if(windo
  };
  if(window.matchMedia('(max-width:700px)').matches)setSheet('closed');
 })();
+
+// V7.2 — Move ALL map overlays into dedicated bottom-sheet tabs on mobile.
+// ArcGIS Zoom widget is retained. Existing AGOL services, data and handlers are unchanged.
+function awV72SetupCleanMap(){
+ if(!window.matchMedia('(max-width:700px)').matches)return;
+ const content=el('awSheetContent');
+ if(!content||el('awMobileTabs'))return;
+ const existing=Array.from(content.children);
+ const tabs=document.createElement('div');tabs.id='awMobileTabs';tabs.setAttribute('role','tablist');tabs.setAttribute('aria-label','Form 55 tools');
+ const panes={};
+ for(const [key,label] of [['search','Find assets'],['voice','Voice & GPS'],['layers','Layers & view']]){
+  const button=document.createElement('button');button.type='button';button.textContent=label;button.dataset.tab=key;button.setAttribute('role','tab');
+  button.setAttribute('aria-selected',String(key==='search'));
+  tabs.append(button);
+  const pane=document.createElement('div');pane.className='aw-tab-content';pane.id='awTab_'+key;pane.hidden=key!=='search';panes[key]=pane;
+ }
+ content.replaceChildren(tabs,panes.search,panes.voice,panes.layers);
+ for(const child of existing)panes.search.append(child);
+ const move=(id,dest)=>{const n=el(id);if(n)dest.append(n);};
+ move('awVoiceToolbar',panes.voice);
+ move('awVoiceChoices',panes.voice);
+ move('awVoiceDictionary',panes.voice);
+ move('awMapTools',panes.voice);
+ move('awGpsStatus',panes.voice);
+ // Move existing widgets instead of duplicating them: listeners and state are preserved.
+ const mapPanel=document.querySelector('#map .esri-ui-top-right');
+ const panel=mapPanel?.querySelector('#awCollapse')?.closest('div[style]')||
+   Array.from(document.querySelectorAll('#map .esri-ui-top-right > *')).find(n=>n.querySelector?.('#awCollapse'));
+ if(panel){panel.id='awExternalMapControls';panes.layers.append(panel);}
+ const floating=el('awCurrentViewFloating');
+ if(floating){floating.id='awExternalCurrentView';panes.layers.append(floating);}
+ // Fallback: move any residual custom widgets out of the map, but leave Esri Zoom.
+ const uiRight=document.querySelector('#map .esri-ui-top-right');
+ if(uiRight){for(const node of Array.from(uiRight.children)){if(node.id!=='awExternalMapControls')panes.layers.append(node);}}
+ const openTab=key=>{
+  for(const [name,pane] of Object.entries(panes))pane.hidden=name!==key;
+  for(const btn of tabs.querySelectorAll('button'))btn.setAttribute('aria-selected',String(btn.dataset.tab===key));
+  content.scrollTop=0;
+  if(window.awV7SetSheet)window.awV7SetSheet('half');
+ };
+ tabs.addEventListener('click',e=>{const key=e.target.closest('button')?.dataset.tab;if(key)openTab(key);});
+ // When the user taps a facility on the map, the search tab remains easy to reach.
+ window.awV72OpenTab=openTab;
+}
 
 start();
 </script>
