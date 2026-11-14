@@ -144,9 +144,14 @@ async function fetchAll(layer,fields){
  for(let i=0;i<keys.length;i+=150){
   const data=await query(layer,{
    objectIds:keys.slice(i,i+150).join(","),
-   outFields:fields,returnGeometry:"false"
+   outFields:fields,returnGeometry:"true"
   });
-  out.push(...(data.features||[]).map(f=>f.attributes));
+  
+  out.push(...(data.features||[]).map(f=>({
+   ...f.attributes,
+   __hostedGeometry: layer===0 ? f.geometry : null
+  })));
+
  }
  return out;
 }
@@ -237,7 +242,12 @@ function renderMap(list){
  if(!graphicsLayer||!Graphic||!Point)return;
  graphicsLayer.removeAll();
  for(const f of list){
-  const lat=Number(f.Latitude),lon=Number(f.Longitude);
+  
+  // AW_V3_LIVE_GEOMETRY_FIX
+  const geometry = f.__hostedGeometry;
+  const lat = Number(geometry?.y);
+  const lon = Number(geometry?.x);
+
   if(!Number.isFinite(lat)||!Number.isFinite(lon))continue;
   const s=status(f);
   graphicsLayer.add(new Graphic({
@@ -301,35 +311,139 @@ map.addMany([
 ], 0);
 
 // Add visibility controls inside ArcGIS MapView.
-const awLayerPanel = document.createElement("div");
-awLayerPanel.style.cssText =
+
+// AW V3 - DYNAMIC MAP LEGEND
+
+const awLegend = document.createElement("div");
+
+awLegend.style.cssText =
  "background:white;color:#183153;padding:10px;" +
  "border-radius:8px;box-shadow:0 2px 8px #0002;" +
- "font:13px Arial;";
+ "font:12px Arial;width:175px;max-width:45vw;";
 
-awLayerPanel.innerHTML = `
- <strong>Operational Layers</strong>
- <label style="display:block;margin-top:8px">
-  <input id="awShowPipelines" type="checkbox" checked>
-  AW Bulk Pipelines
- </label>
- <label style="display:block;margin-top:6px">
+awLegend.innerHTML = `
+ <strong style="display:block;margin-bottom:9px">
+  Legend
+ </strong>
+
+ <label style="display:flex;align-items:center;gap:6px;
+ margin-bottom:8px">
   <input id="awShowSchemes" type="checkbox" checked>
-  Scheme Boundaries
+  <span style="color:#999;font-weight:bold">▱</span>
+  <span>Schemes</span>
+  <b id="awSchemeCount" style="margin-left:auto">...</b>
  </label>
+
+ <div style="display:flex;align-items:center;gap:6px;
+ margin-bottom:5px">
+  <span style="color:#d73743">●</span>
+  <span>Assets</span>
+  <b id="awAssetCount" style="margin-left:auto">...</b>
+ </div>
+
+ <div style="font-size:10px;color:#526577;
+ margin:0 0 9px 18px">
+  🔴 Pending · 🟠 In progress · 🟢 Complete
+ </div>
+
+ <label style="display:flex;align-items:center;gap:6px">
+  <input id="awShowPipelines" type="checkbox" checked>
+  <span style="color:#d9bd00;font-weight:bold">━</span>
+  <span>Pipelines</span>
+  <b id="awPipelineCount" style="margin-left:auto">...</b>
+ </label>
+
+ <div style="font-size:10px;color:#526577;
+ margin-top:10px;border-top:1px solid #ddd;
+ padding-top:6px">
+  Features in current map view
+ </div>
 `;
 
-view.ui.add(awLayerPanel, "bottom-right");
+// Add below the basemap selector in the same UI corner.
+view.ui.add(awLegend, "top-right");
 
-document.getElementById("awShowPipelines").onchange =
- function(){
-  awBulkPipelines.visible = this.checked;
- };
+const awSchemeToggle =
+ document.getElementById("awShowSchemes");
 
-document.getElementById("awShowSchemes").onchange =
- function(){
-  awSchemeBoundaries.visible = this.checked;
- };
+const awPipelineToggle =
+ document.getElementById("awShowPipelines");
+
+awSchemeToggle.onchange = function(){
+ awSchemeBoundaries.visible = this.checked;
+ awUpdateLegend();
+};
+
+awPipelineToggle.onchange = function(){
+ awBulkPipelines.visible = this.checked;
+ awUpdateLegend();
+};
+
+let awLegendRequest = 0;
+
+async function awUpdateLegend(){
+ const request = ++awLegendRequest;
+ const extent = view.extent;
+
+ if(!extent) return;
+
+ const assetCount = graphicsLayer.graphics
+  .filter(g => g.geometry && extent.contains(g.geometry))
+  .length;
+
+ document.getElementById("awAssetCount")
+  .textContent = assetCount;
+
+ async function countLayer(layer, elementId){
+  const element = document.getElementById(elementId);
+
+  if(!layer.visible){
+   element.textContent = "Off";
+   return;
+  }
+
+  element.textContent = "...";
+
+  try{
+   const count = await layer.queryFeatureCount({
+    where: "1=1",
+    geometry: extent,
+    spatialRelationship: "intersects"
+   });
+
+   if(request === awLegendRequest){
+    element.textContent = count.toLocaleString();
+   }
+  }catch(error){
+   if(request === awLegendRequest){
+    element.textContent = "—";
+   }
+   console.warn("Legend count:",error);
+  }
+ }
+
+ await Promise.all([
+  countLayer(awSchemeBoundaries,"awSchemeCount"),
+  countLayer(awBulkPipelines,"awPipelineCount")
+ ]);
+}
+
+let awLegendTimer = null;
+
+view.watch("stationary",function(stationary){
+ if(!stationary) return;
+ clearTimeout(awLegendTimer);
+ awLegendTimer = setTimeout(awUpdateLegend,350);
+});
+
+graphicsLayer.graphics.on("change",function(){
+ if(view.stationary){
+  clearTimeout(awLegendTimer);
+  awLegendTimer = setTimeout(awUpdateLegend,350);
+ }
+});
+
+view.when(awUpdateLegend);
 
 console.log("AW approved map layers initialized.");
 
