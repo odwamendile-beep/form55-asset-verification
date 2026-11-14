@@ -878,45 +878,93 @@ awPanel.querySelector("#awCollapse")
     }
     if(window.awRefreshMapPanel)window.awRefreshMapPanel();
   }
-  function awV66Voice(transcripts){
-    const heard=transcripts[0]||"";el("awVoicePhrase").value=heard;
-    for(const raw of transcripts){
-      const speech=awV66Normal(awResolveAlias(raw));
-      if(/\b(clear all|reset|clear filters|start over|show everything)\b/.test(speech)){
-        awClearFacilitySelection();if(view)view.goTo({center:[27.3,-32.9],zoom:8}).catch(()=>{});return;
-      }
-      const kind=awV66AssetKind(raw),suffix=awV66Digits(raw);
-      const named=/\b(water treatment works|pump station|dam|facility)\b/.test(speech);
-      const candidates=awV66FacilityCandidates(raw);
-      let f=null;
-      if(candidates.length){
-        const best=candidates[0];
-        const close=candidates.filter(c=>c.score>=best.score-12);
-        if(close.length===1)f=best.facility;
-        else if(selected&&close.some(c=>clean(c.facility.Facility_ID)===clean(selected.Facility_ID)))f=selected;
-        else{
-          awV66ShowButtons("Several facilities match. Select ONE (no automatic guess):",close.map(c=>({label:c.facility.Facility_Name,value:c.facility})),chosen=>{
-            if(kind||suffix)awV66SearchAsset(chosen,kind,suffix);else awV66SelectFacility(chosen);
-          });awSetStatus("Choose the correct facility.");return;
-        }
-      }else if(named){
-        awSetStatus('No matching facility name/type for "'+heard+'". Nothing selected.');return;
-      }else if(selected){f=selected;}
-      if(f){if(kind||suffix)awV66SearchAsset(f,kind,suffix);else awV66SelectFacility(f);return;}
-      if(kind||suffix){awSetStatus("Select one facility first, then request "+(kind||"FAR ending "+suffix)+".");return;}
-    }
-    // Scheme-only voice navigation stays available.
-    awVoiceHandle(transcripts);
+  // V7.3: speech is a proposal, never an automatic navigation command.
+  // A facility must be confirmed before a component can be searched.
+  function awV73Confirm(label,action){
+    awV66ShowButtons("Heard: “"+el("awVoicePhrase").value+"”. Confirm the intended action:",
+      [{label:"✓ "+label,value:true},{label:"Cancel — try speaking again",value:false}],
+      yes=>{if(yes)action();else awSetStatus("Search cancelled. Tap Voice search to try again.");});
   }
-
- if(!awSpeechAPI){awVoiceButton.disabled=true;awSetStatus("Speech recognition not supported. Use Chrome or Edge.");}else{
- const recognition=new awSpeechAPI();recognition.lang="en-ZA";recognition.interimResults=false;recognition.maxAlternatives=5;recognition.continuous=false;
- awVoiceButton.onclick=()=>{try{recognition.start();}catch(e){awSetStatus("Microphone: "+e.message);}};
- recognition.onstart=()=>{awVoiceButton.textContent="🎤 Listening...";awSetStatus("Say a scheme, facility or component, e.g. meters inside Nahoon WTW");};
- recognition.onresult=event=>{const alternatives=Array.from(event.results[0]||[]).map(r=>r.transcript).filter(Boolean);awV66Voice(alternatives);};
- recognition.onerror=event=>awSetStatus("Microphone: "+event.error);
- recognition.onend=()=>{awVoiceButton.textContent="🎤 Voice search";};
- }
+  function awV66Voice(transcripts){
+    const heard=(transcripts[0]||"").trim();
+    el("awVoicePhrase").value=heard;
+    awVoiceChoices.classList.add("hidden");
+    if(!heard){awSetStatus("No speech detected. Try again closer to the microphone.");return;}
+    const speech=awV66Normal(awResolveAlias(heard));
+    awSetStatus('Microphone heard: “'+heard+'”. Review before confirming.');
+    if(/\b(clear all|reset|clear filters|start over|show everything)\b/.test(speech)){
+      awV73Confirm("Reset all facility and component filters",()=>awClearFacilitySelection());return;
+    }
+    const kind=awV66AssetKind(heard),suffix=awV66Digits(heard);
+    const named=/\b(water treatment works|pump station|dam|facility)\b/.test(speech);
+    const candidates=awV66FacilityCandidates(heard);
+    const best=candidates[0];
+    // Never use a loosely matching facility. Require either exact name or
+    // a clear place-name + facility type, otherwise ask the user to choose.
+    let f=null;
+    if(best){
+      const close=candidates.filter(c=>c.score>=best.score-12);
+      if(close.length===1 && best.score>=35)f=best.facility;
+      else if(close.length>1){
+        awV66ShowButtons("More than one facility matches what was heard. Choose the correct one:",
+          close.slice(0,8).map(c=>({label:c.facility.Facility_Name,value:c.facility})),
+          chosen=>awV73Confirm("Use "+chosen.Facility_Name,()=>{
+            if(kind||suffix)awV66SearchAsset(chosen,kind,suffix);else awV66SelectFacility(chosen);
+          }));return;
+      }
+    }
+    if(f){
+      const action=(kind||suffix)?"Find "+(kind||"FAR ending "+suffix)+" at "+f.Facility_Name:"Select "+f.Facility_Name;
+      awV73Confirm(action,()=>{if(kind||suffix)awV66SearchAsset(f,kind,suffix);else awV66SelectFacility(f);});return;
+    }
+    if(named){awSetStatus('Heard: “'+heard+'”. No confident facility match. Nothing changed.');return;}
+    if(selected && (kind||suffix)){
+      const current=selected;
+      awV73Confirm("Find "+(kind||"FAR ending "+suffix)+" at "+current.Facility_Name,
+        ()=>awV66SearchAsset(current,kind,suffix));return;
+    }
+    if(kind||suffix){awSetStatus('Heard: “'+heard+'”. Select a facility first, then speak the component.');return;}
+    awSetStatus('Heard: “'+heard+'”. No confident match. Nothing changed; try the full facility name.');
+  }
+  if(!awSpeechAPI){awVoiceButton.disabled=true;awSetStatus("Speech recognition unavailable in this browser. Try Chrome on Android.");}else{
+    const recognition=new awSpeechAPI();
+    recognition.lang="en-ZA";
+    recognition.interimResults=true;
+    recognition.maxAlternatives=3;
+    recognition.continuous=false;
+    let finalPhrases=[];
+    awVoiceButton.onclick=()=>{
+      try{finalPhrases=[];recognition.start();}
+      catch(e){awSetStatus("Microphone: "+e.message+". Wait a moment and retry.");}
+    };
+    recognition.onstart=()=>{
+      awVoiceButton.textContent="🎤 Listening…";
+      awSetStatus("Listening. Say the facility name first; pause when finished.");
+    };
+    recognition.onspeechend=()=>awSetStatus("Processing what you said…");
+    recognition.onresult=event=>{
+      const interim=[];
+      for(let i=0;i<event.results.length;i++){
+        const result=event.results[i];
+        const phrase=(result[0]&&result[0].transcript||"").trim();
+        if(!phrase)continue;
+        if(result.isFinal)finalPhrases[i]=phrase;
+        else interim.push(phrase);
+      }
+      const current=[...finalPhrases.filter(Boolean),...interim].join(" ").trim();
+      if(current){el("awVoicePhrase").value=current;awSetStatus('Hearing: “'+current+'”');}
+    };
+    recognition.onerror=event=>{
+      const hints={"not-allowed":"Microphone permission blocked. Allow microphone access in Chrome site settings.","no-speech":"No speech detected. Move closer and speak clearly.","network":"Speech service unavailable. Check your connection.","audio-capture":"Microphone unavailable. Check phone permissions."};
+      awSetStatus(hints[event.error]||"Microphone: "+event.error);
+    };
+    recognition.onend=()=>{
+      awVoiceButton.textContent="🎤 Voice search";
+      const phrase=finalPhrases.filter(Boolean).join(" ").trim();
+      if(phrase)awV66Voice([phrase]);
+      else if(el("awVoicePhrase").value.trim())awSetStatus('Speech was not finalised. Heard: “'+el("awVoicePhrase").value+'”. Tap Voice search and try again.');
+    };
+  }
 
  const awControl = id => awPanel.querySelector("#" + id);
 
