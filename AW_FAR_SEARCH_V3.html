@@ -193,7 +193,7 @@ function selectFacility(id){
  }
  renderFacilities();
  if(selected&&view){
-  const lat=Number(selected.Latitude),lon=Number(selected.Longitude);
+  const g=selected.__hostedGeometry;const lat=Number(g?.y),lon=Number(g?.x);
   if(Number.isFinite(lat)&&Number.isFinite(lon))
    view.goTo({center:[lon,lat],zoom:16}).catch(()=>{});
  }
@@ -201,6 +201,8 @@ function selectFacility(id){
 function renderAssets(){
  const target=el("assets");
  target.replaceChildren();
+ if(typeof window.awRefreshMapPanel==="function")
+  window.awRefreshMapPanel();
  if(!selected){
   el("selectedTitle").textContent="Select a facility";
   el("progress").textContent="";
@@ -314,164 +316,173 @@ map.addMany([
 
 // AW V3 - DYNAMIC MAP LEGEND
 
-const awLegend = document.createElement("div");
 
-awLegend.style.cssText =
- "background:white;color:#183153;padding:10px;" +
- "border-radius:8px;box-shadow:0 2px 8px #0002;" +
- "font:12px Arial;width:175px;max-width:45vw;";
+// AW_MAP_PANEL_V4 - unified map controls
+const awPanel = document.createElement("div");
 
-awLegend.innerHTML = `
- <strong style="display:block;margin-bottom:9px">
-  Legend
- </strong>
+awPanel.style.cssText =
+ "width:240px;max-width:calc(100vw - 45px);" +
+ "box-sizing:border-box;background:#fff;color:#183153;" +
+ "border:1px solid #dce4ec;border-radius:12px;" +
+ "box-shadow:0 5px 20px #0003;padding:13px;" +
+ "font:13px Arial,sans-serif;";
 
- <label style="display:flex;align-items:center;gap:6px;
- margin-bottom:8px">
-  <input id="awShowSchemes" type="checkbox" checked>
-  <span style="color:#999;font-weight:bold">▱</span>
-  <span>Schemes</span>
-  <b id="awSchemeCount" style="margin-left:auto">...</b>
- </label>
-
- <div style="display:flex;align-items:center;gap:6px;
- margin-bottom:5px">
-  <span style="color:#d73743">●</span>
-  <span>Assets</span>
-  <b id="awAssetCount" style="margin-left:auto">...</b>
+awPanel.innerHTML = `
+ <div style="display:flex;align-items:center;
+ justify-content:space-between;margin-bottom:12px">
+  <strong style="font-size:14px">Map controls</strong>
+  <button id="awCollapse" type="button"
+   aria-expanded="true"
+   style="border:0;background:#eef2f6;border-radius:6px;
+   padding:5px 9px;cursor:pointer">−</button>
  </div>
 
- <div style="font-size:10px;color:#526577;
- margin:0 0 9px 18px">
-  🔴 Pending · 🟠 In progress · 🟢 Complete
- </div>
+ <div id="awPanelBody">
+  <div style="font-size:10px;color:#64748b;
+   letter-spacing:1px;margin-bottom:6px">BASEMAP</div>
 
- <label style="display:flex;align-items:center;gap:6px">
-  <input id="awShowPipelines" type="checkbox" checked>
-  <span style="color:#d9bd00;font-weight:bold">━</span>
-  <span>Pipelines</span>
-  <b id="awPipelineCount" style="margin-left:auto">...</b>
- </label>
+  <select id="awBasemap" aria-label="Basemap"
+   style="width:100%;box-sizing:border-box;padding:9px;
+   border:1px solid #dbe3ec;border-radius:7px;
+   background:#f8fafc;color:#183153">
+   <option value="satellite">Satellite</option>
+   <option value="hybrid">Satellite + Labels</option>
+   <option value="streets-vector">Street</option>
+  </select>
 
- <div style="font-size:10px;color:#526577;
- margin-top:10px;border-top:1px solid #ddd;
- padding-top:6px">
-  Features in current map view
+  <div style="height:1px;background:#e5eaf0;
+   margin:13px 0"></div>
+
+  <strong style="display:block;margin-bottom:11px">Legend</strong>
+
+  <div style="display:grid;
+   grid-template-columns:25px 1fr 20px;
+   align-items:center;gap:8px;margin-bottom:12px">
+   <span style="width:17px;height:12px;
+    border:2px solid #b7c3d0;border-radius:2px"></span>
+   <span>Schemes</span>
+   <input id="awSchemes" type="checkbox" checked
+    aria-label="Show schemes" style="margin:0">
+  </div>
+
+  <div style="display:grid;
+   grid-template-columns:25px 1fr 20px;
+   align-items:center;gap:8px;margin-bottom:12px">
+   <span style="width:12px;height:12px;
+    background:#c63838;border-radius:50%;
+    border:2px solid #fff;
+    box-shadow:0 0 0 1px #c63838"></span>
+   <span>Facilities</span>
+   <input id="awFacilities" type="checkbox" checked
+    aria-label="Show facilities" style="margin:0">
+  </div>
+
+  <div style="display:grid;
+   grid-template-columns:25px 1fr 20px;
+   align-items:center;gap:8px">
+   <span style="width:20px;height:3px;
+    background:#d9bd00;border-radius:3px"></span>
+   <span>Pipelines</span>
+   <input id="awPipelines" type="checkbox" checked
+    aria-label="Show pipelines" style="margin:0">
+  </div>
+
+  <div style="height:1px;background:#e5eaf0;
+   margin:13px 0"></div>
+
+  <div style="font-size:10px;color:#64748b;
+   letter-spacing:1px;margin-bottom:7px">
+   CURRENT VIEW
+  </div>
+
+  <div id="awContext" aria-live="polite"
+   style="background:#f2f6fa;border-radius:8px;
+   padding:11px;line-height:1.5">
+   Loading facilities...
+  </div>
  </div>
 `;
 
-// Add below the basemap selector in the same UI corner.
-view.ui.add(awLegend, "top-right");
+view.ui.add(awPanel, "top-right");
 
-const awSchemeToggle =
- document.getElementById("awShowSchemes");
+const awControl = id => awPanel.querySelector("#" + id);
 
-const awPipelineToggle =
- document.getElementById("awShowPipelines");
+awControl("awBasemap").onchange = function(){
+ map.basemap = this.value;
+};
 
-awSchemeToggle.onchange = function(){
+awControl("awSchemes").onchange = function(){
  awSchemeBoundaries.visible = this.checked;
- awUpdateLegend();
 };
 
-awPipelineToggle.onchange = function(){
+awControl("awFacilities").onchange = function(){
+ graphicsLayer.visible = this.checked;
+ awRefreshMapPanel();
+};
+
+awControl("awPipelines").onchange = function(){
  awBulkPipelines.visible = this.checked;
- awUpdateLegend();
 };
 
-let awLegendRequest = 0;
+awControl("awCollapse").onclick = function(){
+ const body = awControl("awPanelBody");
+ const collapse = body.style.display !== "none";
+ body.style.display = collapse ? "none" : "block";
+ this.textContent = collapse ? "+" : "−";
+ this.setAttribute("aria-expanded",String(!collapse));
+};
 
-async function awUpdateLegend(){
- const request = ++awLegendRequest;
- const extent = view.extent;
+function awRefreshMapPanel(){
+ const target = awControl("awContext");
+ if(!target) return;
 
- if(!extent) return;
+ target.replaceChildren();
 
- const assetCount = graphicsLayer.graphics
-  .filter(g => g.geometry && extent.contains(g.geometry))
-  .length;
-
- document.getElementById("awAssetCount")
-  .textContent = assetCount;
-
- async function countLayer(layer, elementId){
-  const element = document.getElementById(elementId);
-
-  if(!layer.visible){
-   element.textContent = "Off";
-   return;
-  }
-
-  element.textContent = "...";
-
-  try{
-   const count = await layer.queryFeatureCount({
-    where: "1=1",
-    geometry: extent,
-    spatialRelationship: "intersects"
-   });
-
-   if(request === awLegendRequest){
-    element.textContent = count.toLocaleString();
-   }
-  }catch(error){
-   if(request === awLegendRequest){
-    element.textContent = "—";
-   }
-   console.warn("Legend count:",error);
-  }
+ function addLine(value,css){
+  const item = document.createElement("div");
+  item.textContent = value;
+  if(css) item.style.cssText = css;
+  target.appendChild(item);
  }
 
- await Promise.all([
-  countLayer(awSchemeBoundaries,"awSchemeCount"),
-  countLayer(awBulkPipelines,"awPipelineCount")
- ]);
+ if(selected){
+  const count = facilityAssets(selected).length;
+  addLine(selected.Facility_Name || "Selected facility",
+   "font-weight:bold;overflow-wrap:anywhere;margin-bottom:5px");
+  addLine(count.toLocaleString() + " FAR components",
+   "font-size:14px;font-weight:bold;color:#183153");
+  return;
+ }
+
+ const extent = view.extent;
+ const count = graphicsLayer.visible && extent
+  ? graphicsLayer.graphics.filter(g =>
+     g.geometry && extent.contains(g.geometry)
+    ).length
+  : 0;
+
+ addLine("Facilities in current view",
+  "font-size:11px;color:#526577;margin-bottom:3px");
+ addLine(count.toLocaleString(),
+  "font-size:22px;font-weight:bold;color:#183153");
 }
 
-let awLegendTimer = null;
+window.awRefreshMapPanel = awRefreshMapPanel;
 
 view.watch("stationary",function(stationary){
- if(!stationary) return;
- clearTimeout(awLegendTimer);
- awLegendTimer = setTimeout(awUpdateLegend,350);
+ if(stationary) awRefreshMapPanel();
 });
 
 graphicsLayer.graphics.on("change",function(){
- if(view.stationary){
-  clearTimeout(awLegendTimer);
-  awLegendTimer = setTimeout(awUpdateLegend,350);
- }
+ if(view.stationary) awRefreshMapPanel();
 });
 
-view.when(awUpdateLegend);
+view.when(awRefreshMapPanel);
 
 console.log("AW approved map layers initialized.");
 
 
-const awBasemapSelect = document.createElement("select");
-awBasemapSelect.setAttribute("aria-label", "Basemap");
-awBasemapSelect.style.cssText =
- "background:white;color:#183153;padding:9px;" +
- "border:1px solid #ccd5df;border-radius:7px;" +
- "box-shadow:0 2px 8px #0002;";
 
-[
- ["streets-vector","Street"],
- ["satellite","Satellite"],
- ["hybrid","Satellite + Labels"]
-].forEach(function(option){
- const element = document.createElement("option");
- element.value = option[0];
- element.textContent = option[1];
- if(option[0] === "satellite") element.selected = true;
- awBasemapSelect.appendChild(element);
-});
-
-awBasemapSelect.addEventListener("change", function(){
- map.basemap = this.value;
-});
-
-view.ui.add(awBasemapSelect, "top-right");
 
    view.on("click",async event=>{
     const hit=await view.hitTest(event);
