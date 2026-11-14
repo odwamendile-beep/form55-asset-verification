@@ -273,23 +273,26 @@ const awBulkPipelines = new FeatureLayer({
  popupEnabled: true
 });
 
+
 const awSchemeBoundaries = new FeatureLayer({
  url: awContextBase + "8",
  title: "Scheme Boundaries",
  visible: true,
- popupEnabled: true,
+ popupEnabled: false,
+ labelsVisible: false,
  renderer: {
   type: "simple",
   symbol: {
    type: "simple-fill",
-   color: [0,0,0,0],
+   style: "none",
    outline: {
-    color: [255,190,0,0.9],
-    width: 1.8
+    color: [255,255,255,1],
+    width: 2
    }
   }
  }
 });
+
 
 // Boundaries below pipelines; facility pins above both.
 map.addMany([
