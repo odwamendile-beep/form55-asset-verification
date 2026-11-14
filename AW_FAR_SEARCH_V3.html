@@ -62,47 +62,6 @@ input,select{width:100%;padding:12px;border:1px solid #c7d0d3;border-radius:9px;
 <div class="columns">
 <div class="panel">
 <h3>Facility map</h3>
-
-<div id="AW_FAR_V3_MAP_CONTROLS"
- style="position:absolute;top:12px;right:12px;z-index:20;
- background:white;color:#183153;padding:12px;
- border-radius:10px;box-shadow:0 2px 12px #0003;
- max-width:230px;font:13px Arial">
-
- <strong>Map layers</strong>
-
- <div style="margin-top:8px">
-  <label for="awBasemap">Basemap</label>
-  <select id="awBasemap"
-   style="width:100%;padding:6px">
-   <option value="streets-vector">Street</option>
-   <option value="satellite" selected>Satellite</option>
-   <option value="hybrid">Satellite + Labels</option>
-  </select>
- </div>
-
- <div style="margin-top:9px">
-  <label>
-   <input id="awPipeOperating" type="checkbox" checked>
-   Operating pipelines
-  </label>
- </div>
-
- <div style="margin-top:6px">
-  <label>
-   <input id="awPipeRepaired" type="checkbox">
-   Repaired pipelines
-  </label>
- </div>
-
- <div style="margin-top:6px">
-  <label>
-   <input id="awPipeRetic" type="checkbox">
-   Reticulation
-  </label>
- </div>
-</div>
-
 <div id="map"></div>
 <p id="mapStatus">Red: pending | Orange: in progress | Green: complete</p>
 </div>
@@ -293,81 +252,37 @@ async function initMap(){
  return new Promise((resolve,reject)=>{
   require([
    "esri/Map","esri/views/MapView","esri/layers/GraphicsLayer",
-   "esri/Graphic","esri/geometry/Point","esri/layers/FeatureLayer"
-  ],(Map,MapView,GraphicsLayer,G,P,FeatureLayer)=>{
+   "esri/Graphic","esri/geometry/Point"
+  ],(Map,MapView,GraphicsLayer,G,P)=>{
    Graphic=G;Point=P;
    graphicsLayer=new GraphicsLayer();
    const map=new Map({basemap:"satellite",layers:[graphicsLayer]});
    view=new MapView({container:"map",map,center:[27.3,-32.9],zoom:8});
 
-// AW FAR SEARCH V3 - PIPELINE OVERLAYS
+const awBasemapSelect = document.createElement("select");
+awBasemapSelect.setAttribute("aria-label", "Basemap");
+awBasemapSelect.style.cssText =
+ "background:white;color:#183153;padding:9px;" +
+ "border:1px solid #ccd5df;border-radius:7px;" +
+ "box-shadow:0 2px 8px #0002;";
 
-const awBase =
- "https://services.arcgis.com/C6rxPmErTlCKv9Qe/arcgis/rest/services/AW_Sampling_Points_WFL1/FeatureServer/";
-
-const awOperating = new FeatureLayer({
- url: awBase + "10",
- title: "Operating As-Built Pipelines",
- visible: true,
- renderer: {
-  type: "simple",
-  symbol: {
-   type: "simple-line",
-   color: [0,150,255,0.9],
-   width: 2.5
-  }
- }
+[
+ ["streets-vector","Street"],
+ ["satellite","Satellite"],
+ ["hybrid","Satellite + Labels"]
+].forEach(function(option){
+ const element = document.createElement("option");
+ element.value = option[0];
+ element.textContent = option[1];
+ if(option[0] === "satellite") element.selected = true;
+ awBasemapSelect.appendChild(element);
 });
 
-const awRepaired = new FeatureLayer({
- url: awBase + "2",
- title: "Repaired As-Built Pipelines",
- visible: false,
- renderer: {
-  type: "simple",
-  symbol: {
-   type: "simple-line",
-   color: [255,170,0,0.9],
-   width: 2.5,
-   style: "dash"
-  }
- }
-});
-
-const awRetic = new FeatureLayer({
- url: awBase + "6",
- title: "Reticulation",
- visible: false,
- renderer: {
-  type: "simple",
-  symbol: {
-   type: "simple-line",
-   color: [130,80,210,0.85],
-   width: 1.5
-  }
- }
-});
-
-// Add below facility markers.
-map.addMany([awOperating,awRepaired,awRetic],0);
-
-document.getElementById("awBasemap").onchange = function(){
+awBasemapSelect.addEventListener("change", function(){
  map.basemap = this.value;
-};
+});
 
-document.getElementById("awPipeOperating").onchange = function(){
- awOperating.visible = this.checked;
-};
-
-document.getElementById("awPipeRepaired").onchange = function(){
- awRepaired.visible = this.checked;
-};
-
-document.getElementById("awPipeRetic").onchange = function(){
- awRetic.visible = this.checked;
-};
-
-console.log("AW FAR SEARCH V3 map layers ready.");
+view.ui.add(awBasemapSelect, "top-right");
 
    view.on("click",async event=>{
     const hit=await view.hitTest(event);
