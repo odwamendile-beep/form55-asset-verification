@@ -80,9 +80,9 @@ input,select{width:100%;padding:12px;border:1px solid #c7d0d3;border-radius:9px;
 <div class="aw-map-heading"><h3>Facility map</h3><div id="awVoiceToolbar" class="aw-voice-toolbar" aria-label="Voice navigation">
 <button type="button" id="awVoiceButton">🎤 Voice search</button><span id="awVoiceStatus" aria-live="polite">Ready</span>
 </div></div><div id="awVoiceChoices" class="aw-voice-choices hidden" aria-live="polite"></div>
-<details id="awVoiceDictionary"><summary>Teach voice search a name</summary><div class="aw-teach-row"><input id="awVoicePhrase" placeholder="What Chrome hears, e.g. now on" aria-label="Phrase heard"><select id="awVoiceTarget" aria-label="Correct scheme or facility"><option value="">Select correct name</option></select><button type="button" id="awVoiceTeach">Save phrase</button></div><div id="awVoiceSaved"></div></details>
+<details id="awVoiceDictionary"><summary>Teach voice search a name</summary><div class="aw-teach-row"><input id="awVoicePhrase" placeholder="What Chrome hears, e.g. now on" aria-label="Phrase heard"><select id="awVoiceTarget" aria-label="Correct scheme or facility"><option value="">Select correct name</option></select><button type="button" id="awVoiceTeach">Save phrase</button></div><div id="awVoiceSaved"></div><div id="awVocabularyInfo" style="margin-top:6px">Loading vocabulary...</div><button type="button" id="awExportVocabulary" style="font-size:11px;padding:6px;margin-top:6px">Export AGOL names + voice vocabulary</button></details>
 <div id="map"></div>
-<p id="mapStatus">Red: pending | Orange: in progress | Green: complete</p>
+
 </div>
 <div class="panel">
 <h3 id="selectedTitle">Select a facility</h3>
@@ -445,16 +445,16 @@ awPanel.querySelector("#awCollapse")
  // AW_V61_VOICE_NAVIGATION: page toolbar, not a map widget.
  const awVoiceButton=el("awVoiceButton"),awVoiceStatus=el("awVoiceStatus"),awVoiceChoices=el("awVoiceChoices");
  const awSpeechAPI=window.SpeechRecognition||window.webkitSpeechRecognition;
- const awAliasesDefault={"now on":"Nahoon","nah horn":"Nahoon","nahoon":"Nahoon","lion":"Laing","laying":"Laing","lying":"Laing","sandy lee":"Sandile","sandily":"Sandile","mini ameni":"Mnyameni","many a many":"Mnyameni","rooie krantz":"Rooikrantz","roy krantz":"Rooikrantz","debby":"Debe"};
+ const awAliasesDefault={}; // External vocabulary file is loaded below
  const awAliasKey="aw_form55_voice_aliases_v61";
- let awAliases={};
+ let awAliases={}; let awFileAliases={};
  try{const stored=JSON.parse(localStorage.getItem(awAliasKey)||"{}");if(stored&&typeof stored==="object"&&!Array.isArray(stored))awAliases=stored;}catch(e){}
  function awNormal(v){return String(v||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/&/g," and ").replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();}
  const awStop=new Set(["show","find","take","please","open","navigate","search","facility","facilities","scheme","the","for","and","assets","asset","components","component","to","go","me","water","treatment","works","station","plant","pump","pumping","inside","located","want","need","there","here","with","at","in"]);
  function awCleanCommand(v){return awNormal(v).split(" ").filter(w=>w&&!awStop.has(w)).join(" ");}
  function awEditDistance(a,b){const x=Array.from(a),y=Array.from(b),dp=Array.from({length:y.length+1},(_,i)=>i);for(let i=1;i<=x.length;i++){let prev=dp[0];dp[0]=i;for(let j=1;j<=y.length;j++){const old=dp[j];dp[j]=Math.min(dp[j]+1,dp[j-1]+1,prev+(x[i-1]===y[j-1]?0:1));prev=old;}}return dp[y.length];}
  function awCatalog(){return [...Array.from(el("scheme").options).filter(o=>o.value).map(o=>({kind:"scheme",name:o.textContent,value:o.value})),...facilities.map(f=>({kind:"facility",name:f.Facility_Name,value:clean(f.Facility_ID)}))];}
- function awResolveAlias(spoken){let phrase=awCleanCommand(spoken);const all={...awAliasesDefault,...awAliases};const aliases=Object.entries(all).sort((a,b)=>b[0].length-a[0].length);for(const [from,to] of aliases){const term=awNormal(from);if(term && (phrase===term||phrase.includes(" "+term+" ")||phrase.startsWith(term+" ")||phrase.endsWith(" "+term))){phrase=phrase.replace(new RegExp("(^| )"+term.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"(?= |$)","g")," "+awNormal(to)).trim();}}return phrase;}
+ function awResolveAlias(spoken){let phrase=awCleanCommand(spoken);const all={...awAliasesDefault,...awFileAliases,...awAliases};const aliases=Object.entries(all).sort((a,b)=>b[0].length-a[0].length);for(const [from,to] of aliases){const term=awNormal(from);if(term && (phrase===term||phrase.includes(" "+term+" ")||phrase.startsWith(term+" ")||phrase.endsWith(" "+term))){phrase=phrase.replace(new RegExp("(^| )"+term.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"(?= |$)","g")," "+awNormal(to)).trim();}}return phrase;}
  function awScore(query,name){const q=awResolveAlias(query),n=awCleanCommand(name);if(!q||!n)return 0;if(q===n)return 100;if(q.includes(n)&&n.length>=4)return 95;if(n.includes(q)&&q.length>=4)return 86;const qt=q.split(" "),nt=n.split(" ");const hits=nt.filter(t=>qt.includes(t));const tokenScore=hits.length?Math.round(60*hits.length/nt.length+20*hits.length/qt.length):0;const distance=awEditDistance(q,n),ratio=1-distance/Math.max(q.length,n.length);return Math.max(tokenScore,ratio>=.72?Math.round(ratio*80):0);}
  function awSetStatus(t){awVoiceStatus.textContent=t;}
  function awShowChoices(items,caption){awVoiceChoices.replaceChildren();const lead=document.createElement("div");lead.textContent=caption;awVoiceChoices.append(lead);for(const item of items.slice(0,6)){const b=document.createElement("button");b.type="button";b.textContent=(item.kind==="scheme"?"Scheme: ":"Facility: ")+item.name;b.onclick=()=>{awVoiceChoices.classList.add("hidden");awNavigate(item);};awVoiceChoices.append(b);}awVoiceChoices.classList.remove("hidden");}
@@ -463,7 +463,33 @@ awPanel.querySelector("#awCollapse")
  function awPopulateTargets(){const target=el("awVoiceTarget");target.replaceChildren(new Option("Select correct name",""));for(const entry of awCatalog().sort((a,b)=>a.kind.localeCompare(b.kind)||a.name.localeCompare(b.name))){const option=new Option((entry.kind==="scheme"?"Scheme: ":"Facility: ")+entry.name,entry.name);target.add(option);}}
  function awRenderSaved(){const div=el("awVoiceSaved");div.replaceChildren();const entries=Object.entries(awAliases);if(!entries.length){div.textContent="Custom phrases are saved in this browser only.";return;}for(const [from,to] of entries){const line=document.createElement("div");line.textContent=from+" → "+to;const remove=document.createElement("button");remove.textContent="Remove";remove.type="button";remove.onclick=()=>{delete awAliases[from];localStorage.setItem(awAliasKey,JSON.stringify(awAliases));awRenderSaved();};line.append(remove);div.append(line);}}
  el("awVoiceTeach").onclick=()=>{const phrase=awNormal(el("awVoicePhrase").value),target=el("awVoiceTarget").value;if(!phrase||!target){awSetStatus("Enter the words Chrome heard and select the correct name.");return;}awAliases[phrase]=target;try{localStorage.setItem(awAliasKey,JSON.stringify(awAliases));awSetStatus('Saved: "'+phrase+'" → '+target);}catch(e){awSetStatus("Could not save this phrase in browser storage.");}awRenderSaved();};
- window.awV61PopulateTargets=awPopulateTargets;awPopulateTargets();awRenderSaved();
+
+ // AW_V62_EXTERNAL_VOCABULARY
+ async function awLoadVocabulary(){
+   try{
+     const response=await fetch("./AW_FORM55_VOICE_VOCABULARY.json",{cache:"no-store"});
+     if(!response.ok)throw Error("HTTP "+response.status);
+     const data=await response.json();
+     if(!data||typeof data.aliases!=="object"||Array.isArray(data.aliases))throw Error("Invalid vocabulary format");
+     awFileAliases={};
+     for(const [phrase,target] of Object.entries(data.aliases)){
+       if(typeof target==="string"&&phrase.trim()&&target.trim())awFileAliases[awNormal(phrase)]=target.trim();
+     }
+     awSetStatus("Ready · "+Object.keys(awFileAliases).length+" voice phrases loaded");
+     const info=el("awVocabularyInfo");if(info)info.textContent=Object.keys(awFileAliases).length+" phrases loaded from GitHub vocabulary";
+   }catch(error){
+     const info=el("awVocabularyInfo");if(info)info.textContent="Vocabulary file not loaded; manual corrections still work";
+     console.warn("Form 55 vocabulary:",error.message);
+   }
+ }
+ function awExportRegisterVocabulary(){
+   const names=awCatalog();
+   const payload={version:1,description:"Actual scheme and facility names from the authenticated AGOL register. Add aliases to the aliases object and upload the JSON file to GitHub.",schemes:names.filter(x=>x.kind==="scheme").map(x=>x.name),facilities:names.filter(x=>x.kind==="facility").map(x=>x.name),aliases:{...awFileAliases,...awAliases}};
+   const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
+   const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="AW_FORM55_VOICE_VOCABULARY.json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+ }
+ el("awExportVocabulary").onclick=awExportRegisterVocabulary;
+ window.awV61PopulateTargets=awPopulateTargets;awPopulateTargets();awRenderSaved();awLoadVocabulary();
  if(!awSpeechAPI){awVoiceButton.disabled=true;awSetStatus("Speech recognition not supported. Use Chrome or Edge.");}else{
  const recognition=new awSpeechAPI();recognition.lang="en-ZA";recognition.interimResults=false;recognition.maxAlternatives=5;recognition.continuous=false;
  awVoiceButton.onclick=()=>{try{recognition.start();}catch(e){awSetStatus("Microphone: "+e.message);}};
