@@ -557,6 +557,7 @@ awPanel.querySelector("#awCollapse")
  // AW_V61_VOICE_NAVIGATION: page toolbar, not a map widget.
  const awVoiceButton=el("awVoiceButton"),awVoiceStatus=el("awVoiceStatus"),awVoiceChoices=el("awVoiceChoices");
  const awSpeechAPI=window.SpeechRecognition||window.webkitSpeechRecognition;
+ let awVocabularyReady=false;
  const awAliasesDefault={}; // External vocabulary file is loaded below
  let awComponentAliases={};
  const awAliasKey="aw_form55_voice_aliases_v61";
@@ -567,7 +568,7 @@ awPanel.querySelector("#awCollapse")
  function awCleanCommand(v){return awNormal(v).split(" ").filter(w=>w&&!awStop.has(w)).join(" ");}
  function awEditDistance(a,b){const x=Array.from(a),y=Array.from(b),dp=Array.from({length:y.length+1},(_,i)=>i);for(let i=1;i<=x.length;i++){let prev=dp[0];dp[0]=i;for(let j=1;j<=y.length;j++){const old=dp[j];dp[j]=Math.min(dp[j]+1,dp[j-1]+1,prev+(x[i-1]===y[j-1]?0:1));prev=old;}}return dp[y.length];}
  function awCatalog(){return [...Array.from(el("scheme").options).filter(o=>o.value).map(o=>({kind:"scheme",name:o.textContent,value:o.value})),...facilities.map(f=>({kind:"facility",name:f.Facility_Name,value:clean(f.Facility_ID)}))];}
- function awResolveAlias(spoken){let phrase=awCleanCommand(spoken);const all={...awAliasesDefault,...awFileAliases,...awAliases};const aliases=Object.entries(all).sort((a,b)=>b[0].length-a[0].length);for(const [from,to] of aliases){const term=awNormal(from);if(term && (phrase===term||phrase.includes(" "+term+" ")||phrase.startsWith(term+" ")||phrase.endsWith(" "+term))){phrase=phrase.replace(new RegExp("(^| )"+term.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"(?= |$)","g")," "+awNormal(to)).trim();}}return phrase;}
+ function awResolveAlias(spoken){let phrase=awNormal(spoken);const all={...awAliasesDefault,...awFileAliases,...awAliases};const aliases=Object.entries(all).sort((a,b)=>b[0].length-a[0].length);for(const [from,to] of aliases){const term=awNormal(from);if(term && (phrase===term||phrase.includes(" "+term+" ")||phrase.startsWith(term+" ")||phrase.endsWith(" "+term))){phrase=phrase.replace(new RegExp("(^| )"+term.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"(?= |$)","g")," "+awNormal(to)).trim();}}return phrase;}
  function awScore(query,name){const q=awResolveAlias(query),n=awCleanCommand(name);if(!q||!n)return 0;if(q===n)return 100;if(q.includes(n)&&n.length>=4)return 95;if(n.includes(q)&&q.length>=4)return 86;const qt=q.split(" "),nt=n.split(" ");const hits=nt.filter(t=>qt.includes(t));const tokenScore=hits.length?Math.round(60*hits.length/nt.length+20*hits.length/qt.length):0;const distance=awEditDistance(q,n),ratio=1-distance/Math.max(q.length,n.length);return Math.max(tokenScore,ratio>=.72?Math.round(ratio*80):0);}
  function awSetStatus(t){awVoiceStatus.textContent=t;}
  function awShowChoices(items,caption){awVoiceChoices.replaceChildren();const lead=document.createElement("div");lead.textContent=caption;awVoiceChoices.append(lead);for(const item of items.slice(0,6)){const b=document.createElement("button");b.type="button";b.textContent=(item.kind==="scheme"?"Scheme: ":item.kind==="component"?"Asset: ":"Facility: ")+item.name;b.onclick=()=>{awVoiceChoices.classList.add("hidden");awNavigate(item);};awVoiceChoices.append(b);}awVoiceChoices.classList.remove("hidden");}
@@ -661,6 +662,7 @@ awPanel.querySelector("#awCollapse")
          if(typeof target==="string" && phrase.trim() && target.trim())awComponentAliases[awNormal(phrase)]=awNormal(target);
        }
      }
+     awVocabularyReady=true;
      awSetStatus("Ready · "+Object.keys(awFileAliases).length+" place phrases, "+Object.keys(awComponentAliases).length+" asset phrases loaded");
      const info=el("awVocabularyInfo");if(info)info.textContent=Object.keys(awFileAliases).length+" place phrases + "+Object.keys(awComponentAliases).length+" asset phrases loaded";
    }catch(error){
@@ -784,28 +786,39 @@ awPanel.querySelector("#awCollapse")
   function awV66Normal(v){return awNormal(v).replace(/\bwater treatment work\b/g,"water treatment works").replace(/\b(w t w|wtw)\b/g,"water treatment works").replace(/\b(p s|ps)\b/g,"pump station").replace(/\bflowmeters?\b/g,"flow meter").replace(/\bmet flow\b/g,"flow meter");}
   function awV66Tokens(v){return awV66Normal(v).split(" ").filter(Boolean);}
   function awV66FacilityName(f){return awV66Normal(f.Facility_Name);}
+  // V7.5: AGOL facility register is authoritative. Fuzzy matching is used ONLY
+  // to suggest a facility; the operator confirms before the map changes.
+  function awV75Sound(v){return awNormal(v).replace(/ph/g,"f").replace(/qu/g,"kw").replace(/ck/g,"k").replace(/c(?=[eiy])/g,"s").replace(/c/g,"k").replace(/oo/g,"u").replace(/ou/g,"u").replace(/ee/g,"i").replace(/y/g,"i").replace(/([a-z])\1+/g,"$1").replace(/[aeiou]/g,"");}
+  function awV75WordScore(a,b){
+    if(a===b)return 1;
+    if(a.length<3||b.length<3)return 0;
+    const x=awV75Sound(a),y=awV75Sound(b);
+    if(x.length>=3&&x===y)return .91;
+    const dist=awEditDistance(a,b),ratio=1-dist/Math.max(a.length,b.length);
+    return ratio>=.68?ratio*.9:0;
+  }
   function awV66FacilityCandidates(phrase){
     const speech=awV66Normal(awResolveAlias(phrase));
     const requestedWTW=/\bwater treatment works\b/.test(speech);
     const requestedPS=/\bpump station\b/.test(speech);
     const requestedDam=/\bdam\b/.test(speech);
-    const requestTypes=[requestedWTW,requestedPS,requestedDam].filter(Boolean).length;
-    const stop=new Set(["find","show","search","take","me","to","inside","in","at","the","a","an","my","please","asset","component","far","number","with","for","on","water","treatment","works","pump","station","dam","meter","flow","motor","valve","board","gauge","of","and","scheme","facility"]);
-    const words=awV66Tokens(speech).filter(w=>!stop.has(w));
+    const requestedRes=/\breservoir\b/.test(speech);
+    const stop=new Set(["find","show","search","take","me","to","inside","in","at","the","a","an","my","please","asset","component","far","number","with","for","on","water","treatment","works","pump","station","dam","meter","flow","motor","valve","board","gauge","of","and","scheme","facility","reservoir"]);
+    const words=awV66Tokens(speech).filter(w=>!stop.has(w)&&w.length>=3);
     return facilities.map(f=>{
-      const name=awV66FacilityName(f);
-      if(requestedWTW&&!name.includes("water treatment works")&&!/\bwtw\b/.test(awNormal(f.Facility_Name)))return null;
-      if(requestedPS&&!name.includes("pump station"))return null;
+      const name=awV66FacilityName(f), raw=awNormal(f.Facility_Name);
+      if(requestedWTW&&!name.includes("water treatment works"))return null;
+      if(requestedPS&&!name.includes("pump station")&&!/pumpstation/.test(raw))return null;
       if(requestedDam&&!name.includes("dam"))return null;
-      const nameWords=awV66Tokens(name);
-      const matches=words.filter(w=>nameWords.includes(w));
-      const scheme=awV66Normal(f.Scheme);
-      const hasScheme=scheme&&speech.includes(scheme);
-      const nameExact=speech.includes(name)&&name.length>=5;
-      const score=(nameExact?100:0)+matches.length*25+(hasScheme?10:0)+(requestTypes?15:0);
-      if(!nameExact&&!matches.length)return null;
+      if(requestedRes&&!name.includes("reservoir")&&!/\bres\b/.test(raw))return null;
+      const nameWords=awV66Tokens(name).filter(w=>!stop.has(w)&&w.length>=3);
+      const similarities=words.map(w=>Math.max(0,...nameWords.map(n=>awV75WordScore(w,n))));
+      const good=similarities.filter(x=>x>=.65);
+      const exact=speech===name || (name.length>=6&&speech.includes(name));
+      if(!exact&&!good.length)return null;
+      const score=exact?150:Math.round(good.reduce((a,v)=>a+v,0)*38/Math.max(words.length,nameWords.length,1))+(good.length===words.length?15:0)+(requestedWTW||requestedPS||requestedDam||requestedRes?20:0);
       return {facility:f,score};
-    }).filter(Boolean).sort((a,b)=>b.score-a.score);
+    }).filter(Boolean).sort((a,b)=>b.score-a.score||a.facility.Facility_Name.localeCompare(b.facility.Facility_Name));
   }
   function awV66AssetKind(phrase){
     const text=" "+awV66Normal(phrase)+" ";
@@ -898,14 +911,15 @@ awPanel.querySelector("#awCollapse")
     const kind=awV66AssetKind(heard),suffix=awV66Digits(heard);
     const named=/\b(water treatment works|pump station|dam|facility)\b/.test(speech);
     const candidates=awV66FacilityCandidates(heard);
+    if(speech.length<=2 && !selected){awSetStatus('Heard: “'+heard+'”. Too short to identify a facility safely. Please say the full name, e.g. Nahoon Water Treatment Works.');return;}
     const best=candidates[0];
     // Never use a loosely matching facility. Require either exact name or
     // a clear place-name + facility type, otherwise ask the user to choose.
     let f=null;
     if(best){
       const close=candidates.filter(c=>c.score>=best.score-12);
-      if(close.length===1 && best.score>=35)f=best.facility;
-      else if(close.length>1){
+      if(close.length===1 && best.score>=42)f=best.facility;
+      else if(close.length>1 && best.score>=28){
         awV66ShowButtons("More than one facility matches what was heard. Choose the correct one:",
           close.slice(0,8).map(c=>({label:c.facility.Facility_Name,value:c.facility})),
           chosen=>awV73Confirm("Use "+chosen.Facility_Name,()=>{
@@ -916,6 +930,12 @@ awPanel.querySelector("#awCollapse")
     if(f){
       const action=(kind||suffix)?"Find "+(kind||"FAR ending "+suffix)+" at "+f.Facility_Name:"Select "+f.Facility_Name;
       awV73Confirm(action,()=>{if(kind||suffix)awV66SearchAsset(f,kind,suffix);else awV66SelectFacility(f);});return;
+    }
+    if(candidates.length && best.score>=24 && !selected){
+      awV66ShowButtons("Possible registered facilities — select only if correct:",
+        candidates.slice(0,6).map(c=>({label:c.facility.Facility_Name,value:c.facility})),
+        chosen=>awV73Confirm("Select "+chosen.Facility_Name,()=>awV66SelectFacility(chosen)));
+      awSetStatus('Heard: “'+heard+'”. Recognition uncertain. Please choose a facility.');return;
     }
     if(named){awSetStatus('Heard: “'+heard+'”. No confident facility match. Nothing changed.');return;}
     if(selected && (kind||suffix)){
@@ -930,11 +950,11 @@ awPanel.querySelector("#awCollapse")
     const recognition=new awSpeechAPI();
     recognition.lang="en-ZA";
     recognition.interimResults=true;
-    recognition.maxAlternatives=3;
+    recognition.maxAlternatives=5;
     recognition.continuous=false;
-    let finalPhrases=[];
+    let finalPhrases=[];let speechAlternatives=[];
     awVoiceButton.onclick=()=>{
-      try{finalPhrases=[];recognition.start();}
+      try{finalPhrases=[];speechAlternatives=[];if(!awVocabularyReady){awSetStatus("Vocabulary not loaded yet. Check Layers & View / Teach voice search status.");return;}recognition.start();}
       catch(e){awSetStatus("Microphone: "+e.message+". Wait a moment and retry.");}
     };
     recognition.onstart=()=>{
@@ -948,7 +968,7 @@ awPanel.querySelector("#awCollapse")
         const result=event.results[i];
         const phrase=(result[0]&&result[0].transcript||"").trim();
         if(!phrase)continue;
-        if(result.isFinal)finalPhrases[i]=phrase;
+        if(result.isFinal){finalPhrases[i]=phrase;for(let k=0;k<result.length;k++){const alt=(result[k]?.transcript||"").trim();if(alt&&!speechAlternatives.includes(alt))speechAlternatives.push(alt);}}
         else interim.push(phrase);
       }
       const current=[...finalPhrases.filter(Boolean),...interim].join(" ").trim();
@@ -961,7 +981,20 @@ awPanel.querySelector("#awCollapse")
     recognition.onend=()=>{
       awVoiceButton.textContent="🎤 Voice search";
       const phrase=finalPhrases.filter(Boolean).join(" ").trim();
-      if(phrase)awV66Voice([phrase]);
+      if(phrase){
+        // Consider alternative recognizer transcripts, but never silently choose a different facility.
+        const heardOptions=[phrase,...speechAlternatives.filter(x=>x!==phrase)];
+        const viable=heardOptions.map(t=>({text:t, candidates:awV66FacilityCandidates(t)}));
+        const primary=viable[0];
+        const selectedOption=primary.candidates.length?primary:viable.find(x=>x.candidates.length);
+        if(selectedOption && selectedOption.text!==phrase){
+          awSetStatus('Phone heard “'+phrase+'”; alternative: “'+selectedOption.text+'”. Please confirm.');
+          awV66ShowButtons('Speech alternatives — choose what you meant:',[
+            {label:'Use “'+selectedOption.text+'”',value:selectedOption.text},
+            {label:'Use “'+phrase+'”',value:phrase}
+          ],chosen=>awV66Voice([chosen]));
+        }else awV66Voice([phrase]);
+      }
       else if(el("awVoicePhrase").value.trim())awSetStatus('Speech was not finalised. Heard: “'+el("awVoicePhrase").value+'”. Tap Voice search and try again.');
     };
   }

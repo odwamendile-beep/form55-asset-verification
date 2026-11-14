@@ -1,6 +1,6 @@
 {
-  "version": 2,
-  "description": "Form 55 voice aliases. The application automatically loads exact scheme and facility names from the live ArcGIS Online asset register. Add misheard phrases here; target must match an AGOL name.",
+  "version": 3,
+  "description": "V7.5: AGOL facilities and schemes are authoritative and loaded dynamically. Aliases correct common Chrome transcriptions; uncertain fuzzy matches require confirmation.",
   "aliases": {
     "now on": "Nahoon",
     "now horn": "Nahoon",
@@ -20,7 +20,22 @@
     "debby": "Debe",
     "bin field": "Binfield",
     "peddy": "Peddie",
-    "glen more": "Glenmore"
+    "glen more": "Glenmore",
+    "nohu": "Nahoon",
+    "no hoo": "Nahoon",
+    "no who": "Nahoon",
+    "nahu": "Nahoon",
+    "nahoon": "Nahoon",
+    "no horn": "Nahoon",
+    "noon": "Nahoon",
+    "now who": "Nahoon",
+    "no hoon": "Nahoon",
+    "nah hoon": "Nahoon",
+    "nowoon": "Nahoon",
+    "congota": "Qongqota",
+    "kong kota": "Qongqota",
+    "mnyamaeni": "Mnyameni",
+    "mass in sedane": "Masincedane"
   },
   "component_aliases": {
     "meters": "meter",
