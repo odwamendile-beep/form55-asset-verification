@@ -170,7 +170,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 <div class="panel" id="awMapPanel">
 <div class="aw-map-heading"><h3>Facility map</h3><div id="awVoiceToolbar" class="aw-voice-toolbar" aria-label="Voice navigation">
 <button type="button" id="awVoiceButton">🎤 Voice search</button><span id="awVoiceStatus" aria-live="polite">Ready</span>
-</div></div><div style="font-size:11px;color:#526577;margin:0 0 8px">Say a facility first, then a component or FAR number. Example: “Nahoon Water Treatment Works”, then “flow meter”.</div><div id="awVoiceChoices" class="aw-voice-choices hidden" aria-live="polite"></div>
+</div></div><div style="font-size:11px;color:#526577;margin:0 0 8px">Select a scheme first, then say a facility and component or FAR number. Example: “Nahoon Water Treatment Works”, then “flow meter”.</div><div id="awVoiceChoices" class="aw-voice-choices hidden" aria-live="polite"></div>
 <details id="awVoiceDictionary"><summary>Teach voice search a name</summary><div class="aw-teach-row"><input id="awVoicePhrase" placeholder="What Chrome hears, e.g. now on" aria-label="Phrase heard"><select id="awVoiceTarget" aria-label="Correct scheme or facility"><option value="">Select correct name</option></select><button type="button" id="awVoiceTeach">Save phrase</button></div><div id="awVoiceSaved"></div><div id="awVocabularyInfo" style="margin-top:6px">Loading vocabulary...</div><button type="button" id="awExportVocabulary" style="font-size:11px;padding:6px;margin-top:6px">Export AGOL names + voice vocabulary</button></details>
 <div id="map"></div>
 <div id="awMapTools"><button type="button" id="awLocate" aria-label="Locate my position" title="Locate my position">◎</button><button type="button" id="awSheetToggle" aria-label="Show asset search" title="Show asset search">☰</button></div>
@@ -299,6 +299,20 @@ function status(f){
  return {total:arr.length,done,
   color:arr.length&&done===arr.length?"#198754":done>0?"#ef8b23":"#c63838"};
 }
+function awScopeFacilities(){
+ const scheme=el("scheme").value;
+ const term=norm(el("facilitySearch").value);
+ const list=facilities.filter(f=>(!scheme||f.Scheme===scheme)&&(!term||norm(f.Facility_Name).includes(term)));
+ return selected && list.some(f=>clean(f.Facility_ID)===clean(selected.Facility_ID)) ? list.filter(f=>clean(f.Facility_ID)===clean(selected.Facility_ID)) : list;
+}
+function awUpdateScopedKpis(){
+ const list=awScopeFacilities();
+ const ids=new Set(list.map(f=>clean(f.Facility_ID)));
+ const assets=components.filter(a=>ids.has(clean(a.Facility_ID)));
+ el("facilityCount").textContent=list.length;
+ el("assetCount").textContent=assets.length;
+ el("verifiedCount").textContent=assets.filter(isVerified).length;
+}
 function renderFacilities(){
  const visible=filteredFacilities().filter(f=>!window.awVoiceFacilityFocus || clean(f.Facility_ID)===clean(window.awVoiceFacilityFocus));
  const select=el("facility");
@@ -310,7 +324,8 @@ function renderFacilities(){
  if(selected&&visible.some(f=>f.Facility_ID===selected.Facility_ID))
   select.value=selected.Facility_ID;
  else selected=null;
- renderMap(visible);
+ renderMap(selected ? visible.filter(f=>clean(f.Facility_ID)===clean(selected.Facility_ID)) : visible);
+ awUpdateScopedKpis();
  renderAssets();
 }
 function selectFacility(id,zoom=false){
@@ -567,7 +582,7 @@ awPanel.querySelector("#awCollapse")
  const awStop=new Set(["show","find","take","please","open","navigate","search","facility","facilities","scheme","the","for","and","assets","asset","components","component","to","go","me","water","treatment","works","station","plant","pump","pumping","inside","located","want","need","there","here","with","at","in"]);
  function awCleanCommand(v){return awNormal(v).split(" ").filter(w=>w&&!awStop.has(w)).join(" ");}
  function awEditDistance(a,b){const x=Array.from(a),y=Array.from(b),dp=Array.from({length:y.length+1},(_,i)=>i);for(let i=1;i<=x.length;i++){let prev=dp[0];dp[0]=i;for(let j=1;j<=y.length;j++){const old=dp[j];dp[j]=Math.min(dp[j]+1,dp[j-1]+1,prev+(x[i-1]===y[j-1]?0:1));prev=old;}}return dp[y.length];}
- function awCatalog(){return [...Array.from(el("scheme").options).filter(o=>o.value).map(o=>({kind:"scheme",name:o.textContent,value:o.value})),...facilities.map(f=>({kind:"facility",name:f.Facility_Name,value:clean(f.Facility_ID)}))];}
+ function awCatalog(){return facilities.filter(f=>!el("scheme").value||f.Scheme===el("scheme").value).map(f=>({kind:"facility",name:f.Facility_Name,value:clean(f.Facility_ID)}));}
  function awResolveAlias(spoken){let phrase=awNormal(spoken);const all={...awAliasesDefault,...awFileAliases,...awAliases};const aliases=Object.entries(all).sort((a,b)=>b[0].length-a[0].length);for(const [from,to] of aliases){const term=awNormal(from);if(term && (phrase===term||phrase.includes(" "+term+" ")||phrase.startsWith(term+" ")||phrase.endsWith(" "+term))){phrase=phrase.replace(new RegExp("(^| )"+term.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"(?= |$)","g")," "+awNormal(to)).trim();}}return phrase;}
  function awScore(query,name){const q=awResolveAlias(query),n=awCleanCommand(name);if(!q||!n)return 0;if(q===n)return 100;if(q.includes(n)&&n.length>=4)return 95;if(n.includes(q)&&q.length>=4)return 86;const qt=q.split(" "),nt=n.split(" ");const hits=nt.filter(t=>qt.includes(t));const tokenScore=hits.length?Math.round(60*hits.length/nt.length+20*hits.length/qt.length):0;const distance=awEditDistance(q,n),ratio=1-distance/Math.max(q.length,n.length);return Math.max(tokenScore,ratio>=.72?Math.round(ratio*80):0);}
  function awSetStatus(t){awVoiceStatus.textContent=t;}
@@ -805,7 +820,7 @@ awPanel.querySelector("#awCollapse")
     const requestedRes=/\breservoir\b/.test(speech);
     const stop=new Set(["find","show","search","take","me","to","inside","in","at","the","a","an","my","please","asset","component","far","number","with","for","on","water","treatment","works","pump","station","dam","meter","flow","motor","valve","board","gauge","of","and","scheme","facility","reservoir"]);
     const words=awV66Tokens(speech).filter(w=>!stop.has(w)&&w.length>=3);
-    return facilities.map(f=>{
+    return facilities.filter(f=>!el("scheme").value || f.Scheme===el("scheme").value).map(f=>{
       const name=awV66FacilityName(f), raw=awNormal(f.Facility_Name);
       if(requestedWTW&&!name.includes("water treatment works"))return null;
       if(requestedPS&&!name.includes("pump station")&&!/pumpstation/.test(raw))return null;
@@ -910,6 +925,7 @@ awPanel.querySelector("#awCollapse")
     }
     const kind=awV66AssetKind(heard),suffix=awV66Digits(heard);
     const named=/\b(water treatment works|pump station|dam|facility)\b/.test(speech);
+    if(!el("scheme").value){awSetStatus("Select a scheme first, then speak the facility name.");return;}
     const candidates=awV66FacilityCandidates(heard);
     if(speech.length<=2 && !selected){awSetStatus('Heard: “'+heard+'”. Too short to identify a facility safely. Please say the full name, e.g. Nahoon Water Treatment Works.');return;}
     const best=candidates[0];
@@ -1163,9 +1179,7 @@ async function start(){
    fetchAll(0,"Facility_ID,Facility_Name,Scheme,Latitude,Longitude"),
    fetchAll(1,"Facility_ID,FAR_ID,ComponentType,AssetName,Building,Floor,Room,Verification_Status,Completion_Flag,Survey123_Edit_URL")
   ]);
-  el("facilityCount").textContent=facilities.length;
-  el("assetCount").textContent=components.length;
-  el("verifiedCount").textContent=components.filter(isVerified).length;
+  // Scoped KPI values are updated by renderFacilities after loading.
   const schemes=[...new Set(facilities.map(f=>f.Scheme).filter(Boolean))].sort();
   for(const s of schemes)el("scheme").add(new Option(s,s));
   el("workspace").classList.remove("hidden");
@@ -1219,6 +1233,8 @@ function awV6ZoomFiltered(){
 }
 
 function awV6ApplyFilter(){
+ selected=null;
+ el("farSearch").value="";
  window.awVoiceFacilityFocus=null;
  window.awVoiceAssetIds=null;
  renderFacilities();
