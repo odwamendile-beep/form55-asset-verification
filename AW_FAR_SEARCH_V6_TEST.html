@@ -52,7 +52,7 @@ input,select{width:100%;padding:12px;border:1px solid #c7d0d3;border-radius:9px;
 </head>
 <body>
 <header>
-<h1>AW FAR SEARCH — V6.6 TEST</h1>
+<h1>AW FAR SEARCH — V6.7 TEST</h1>
 <p>Amatola Water | Facility Mapping & Asset Verification</p>
 </header>
 <main>
@@ -192,7 +192,7 @@ function status(f){
   color:arr.length&&done===arr.length?"#198754":done>0?"#ef8b23":"#c63838"};
 }
 function renderFacilities(){
- const visible=filteredFacilities();
+ const visible=filteredFacilities().filter(f=>!window.awVoiceFacilityFocus || clean(f.Facility_ID)===clean(window.awVoiceFacilityFocus));
  const select=el("facility");
  select.replaceChildren(new Option("Select a facility",""));
  visible.sort((a,b)=>clean(a.Facility_Name).localeCompare(clean(b.Facility_Name)));
@@ -726,12 +726,14 @@ awPanel.querySelector("#awCollapse")
     awVoiceChoices.classList.remove("hidden");
   }
   function awV66SelectFacility(f){
+    window.awVoiceFacilityFocus=clean(f.Facility_ID);
     window.awVoiceAssetIds=null;el("farSearch").value="";
     selectFacility(f.Facility_ID,true);
     awVoiceChoices.classList.add("hidden");
     awSetStatus("Facility selected: "+f.Facility_Name+". Say a component or FAR last four digits.");
   }
   function awV66SelectAsset(f,a){
+    window.awVoiceFacilityFocus=clean(f.Facility_ID);
     window.awVoiceAssetIds=new Set([clean(a.FAR_ID)+"|"+clean(a.Facility_ID)]);
     el("farSearch").value="";
     selected=f;renderFacilities();renderAssets();
@@ -751,6 +753,7 @@ awPanel.querySelector("#awCollapse")
       return true;
     });
     // Show exactly the requested facility pin, regardless of whether an asset exists.
+    window.awVoiceFacilityFocus=clean(f.Facility_ID);
     selected=f;el("farSearch").value="";
     window.awVoiceAssetIds=new Set(matches.map(a=>clean(a.FAR_ID)+"|"+clean(a.Facility_ID)));
     renderFacilities();renderAssets();awV6ZoomFacility(f);
@@ -914,6 +917,7 @@ function awRefreshMapPanel(){
 }
 
 function awClearFacilitySelection(){
+ window.awVoiceFacilityFocus=null;
  selected = null;
 
  el("facilitySearch").value = "";
@@ -952,7 +956,7 @@ console.log("AW approved map layers initialized.");
    view.on("click",async event=>{
     const hit=await view.hitTest(event);
     const found=hit.results.find(r=>r.graphic?.layer===graphicsLayer);
-    if(found)selectFacility(found.graphic.attributes.fid,false);
+    if(found){window.awVoiceFacilityFocus=clean(found.graphic.attributes.fid);selectFacility(found.graphic.attributes.fid,false);}
    });
    view.when(resolve,reject);
   },reject);
@@ -1024,6 +1028,7 @@ function awV6ZoomFiltered(){
 }
 
 function awV6ApplyFilter(){
+ window.awVoiceFacilityFocus=null;
  window.awVoiceAssetIds=null;
  renderFacilities();
  awV6ZoomFiltered();
@@ -1031,7 +1036,7 @@ function awV6ApplyFilter(){
 
 el("scheme").onchange=awV6ApplyFilter;
 el("facilitySearch").oninput=awV6ApplyFilter;
-el("facility").onchange=e=>{window.awVoiceAssetIds=null;el("farSearch").value="";selectFacility(e.target.value,true);};
+el("facility").onchange=e=>{window.awVoiceFacilityFocus=null;window.awVoiceAssetIds=null;el("farSearch").value="";selectFacility(e.target.value,true);};
 el("farSearch").oninput=()=>{window.awVoiceAssetIds=null;renderAssets();if(window.awRefreshMapPanel)window.awRefreshMapPanel();};
 start();
 </script>
