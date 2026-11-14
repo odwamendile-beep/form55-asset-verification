@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>AW FAR SEARCH V6.1 TEST</title>
+<title>AW FAR SEARCH V6.6 TEST</title>
 <link rel="icon" href="./icon-192.png">
 <link rel="stylesheet" href="https://js.arcgis.com/4.32/esri/themes/light/main.css">
 <script src="https://js.arcgis.com/4.32/"></script>
@@ -52,7 +52,7 @@ input,select{width:100%;padding:12px;border:1px solid #c7d0d3;border-radius:9px;
 </head>
 <body>
 <header>
-<h1>AW FAR SEARCH — V6.5 TEST</h1>
+<h1>AW FAR SEARCH — V6.6 TEST</h1>
 <p>Amatola Water | Facility Mapping & Asset Verification</p>
 </header>
 <main>
@@ -235,7 +235,7 @@ function renderAssets(){
   const fields=[a.FAR_ID,a.ComponentType,a.AssetName,a.Building,a.Floor,a.Room];
   return !term || fields.some(v=>norm(v).replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").includes(term));
  });
- if(!matches.length){target.textContent="No matching components.";return;}
+ if(!matches.length){target.textContent=window.awVoiceAssetIds ? "No registered component matches this request at the selected facility." : "No matching components.";return;}
  for(const a of matches){
   const card=document.createElement("div");
   card.className="asset";
@@ -667,11 +667,141 @@ awPanel.querySelector("#awCollapse")
    awVoiceHandle(transcripts);
  }
 
+
+  // AW_V66_STRICT_HIERARCHY — exactly one facility and at most one FAR asset.
+  // Never guess another facility or fabricate a component when the register has no match.
+  let awV66LastRequest="";
+  const awV66Types={"met flow":"flow meter","meter flow":"flow meter","flowmetre":"flow meter","flowmeter":"flow meter","flow meters":"flow meter","flow meter":"flow meter","water meter":"meter","bulk meter":"meter","metre":"meter","meeter":"meter","meters":"meter","pumps":"pump","pump sets":"pump","motors":"motor","valves":"valve","db board":"distribution board","distribution boards":"distribution board","pressure gauges":"pressure gauge","gauges":"gauge"};
+  function awV66Normal(v){return awNormal(v).replace(/\bwater treatment work\b/g,"water treatment works").replace(/\b(w t w|wtw)\b/g,"water treatment works").replace(/\b(p s|ps)\b/g,"pump station").replace(/\bflowmeters?\b/g,"flow meter").replace(/\bmet flow\b/g,"flow meter");}
+  function awV66Tokens(v){return awV66Normal(v).split(" ").filter(Boolean);}
+  function awV66FacilityName(f){return awV66Normal(f.Facility_Name);}
+  function awV66FacilityCandidates(phrase){
+    const speech=awV66Normal(awResolveAlias(phrase));
+    const requestedWTW=/\bwater treatment works\b/.test(speech);
+    const requestedPS=/\bpump station\b/.test(speech);
+    const requestedDam=/\bdam\b/.test(speech);
+    const requestTypes=[requestedWTW,requestedPS,requestedDam].filter(Boolean).length;
+    const stop=new Set(["find","show","search","take","me","to","inside","in","at","the","a","an","my","please","asset","component","far","number","with","for","on","water","treatment","works","pump","station","dam","meter","flow","motor","valve","board","gauge","of","and","scheme","facility"]);
+    const words=awV66Tokens(speech).filter(w=>!stop.has(w));
+    return facilities.map(f=>{
+      const name=awV66FacilityName(f);
+      if(requestedWTW&&!name.includes("water treatment works")&&!/\bwtw\b/.test(awNormal(f.Facility_Name)))return null;
+      if(requestedPS&&!name.includes("pump station"))return null;
+      if(requestedDam&&!name.includes("dam"))return null;
+      const nameWords=awV66Tokens(name);
+      const matches=words.filter(w=>nameWords.includes(w));
+      const scheme=awV66Normal(f.Scheme);
+      const hasScheme=scheme&&speech.includes(scheme);
+      const nameExact=speech.includes(name)&&name.length>=5;
+      const score=(nameExact?100:0)+matches.length*25+(hasScheme?10:0)+(requestTypes?15:0);
+      if(!nameExact&&!matches.length)return null;
+      return {facility:f,score};
+    }).filter(Boolean).sort((a,b)=>b.score-a.score);
+  }
+  function awV66AssetKind(phrase){
+    const text=" "+awV66Normal(phrase)+" ";
+    if(text.includes(" pump station ") && !/\b(meter|motor|valve|flow|generator|gauge)\b/.test(text))return null;
+    const dict={...awV66Types,...awComponentAliases};
+    for(const [alias,canonical] of Object.entries(dict).sort((a,b)=>b[0].length-a[0].length)){
+      if(text.includes(" "+awV66Normal(alias)+" "))return awV66Normal(canonical);
+    }
+    const known=["flow meter","distribution board","pressure gauge","control panel","electric motor","meter","pump","motor","valve","filter","generator","sensor","transformer","tank","pipe","instrument"];
+    return known.find(w=>text.includes(" "+w+" "))||null;
+  }
+  function awV66Digits(phrase){
+    let t=awV66Normal(phrase);
+    const names={zero:"0",oh:"0",one:"1",two:"2",three:"3",four:"4",five:"5",six:"6",seven:"7",eight:"8",nine:"9"};
+    t=t.replace(/\b(?:zero|oh|one|two|three|four|five|six|seven|eight|nine)(?:\s+(?:zero|oh|one|two|three|four|five|six|seven|eight|nine)){3,}\b/g,m=>m.split(" ").map(w=>names[w]).join(""));
+    const m=t.match(/\b(?:far|asset|ending|ends|last four|last 4)\b[^0-9]{0,30}(\d[\d\s-]{3,})/);
+    if(m){const digits=m[1].replace(/\D/g,"");return digits.length>=4?digits.slice(-4):null;}
+    const lone=t.match(/\b\d{4}\b/);
+    return lone?lone[0]:null;
+  }
+  function awV66ShowButtons(title,items,onChoose){
+    awVoiceChoices.replaceChildren();const intro=document.createElement("div");intro.textContent=title;awVoiceChoices.append(intro);
+    for(const item of items.slice(0,12)){
+      const b=document.createElement("button");b.type="button";b.textContent=item.label;
+      b.onclick=()=>{awVoiceChoices.classList.add("hidden");onChoose(item.value);};awVoiceChoices.append(b);
+    }
+    awVoiceChoices.classList.remove("hidden");
+  }
+  function awV66SelectFacility(f){
+    window.awVoiceAssetIds=null;el("farSearch").value="";
+    selectFacility(f.Facility_ID,true);
+    awVoiceChoices.classList.add("hidden");
+    awSetStatus("Facility selected: "+f.Facility_Name+". Say a component or FAR last four digits.");
+  }
+  function awV66SelectAsset(f,a){
+    window.awVoiceAssetIds=new Set([clean(a.FAR_ID)+"|"+clean(a.Facility_ID)]);
+    el("farSearch").value="";
+    selected=f;renderFacilities();renderAssets();
+    awVoiceChoices.classList.add("hidden");
+    awSetStatus("1 registered component: FAR "+clean(a.FAR_ID)+" at "+f.Facility_Name);
+    if(window.awRefreshMapPanel)window.awRefreshMapPanel();
+  }
+  function awV66SearchAsset(f,kind,suffix){
+    const all=facilityAssets(f);
+    const matches=all.filter(a=>{
+      if(suffix && !clean(a.FAR_ID).replace(/\D/g,"").endsWith(suffix))return false;
+      if(kind){
+        const description=awV66Normal([a.ComponentType,a.AssetName].filter(Boolean).join(" "));
+        const words=awV66Tokens(kind);
+        if(!words.every(w=>awV66Tokens(description).includes(w)))return false;
+      }
+      return true;
+    });
+    // Show exactly the requested facility pin, regardless of whether an asset exists.
+    selected=f;el("farSearch").value="";
+    window.awVoiceAssetIds=new Set(matches.map(a=>clean(a.FAR_ID)+"|"+clean(a.Facility_ID)));
+    renderFacilities();renderAssets();awV6ZoomFacility(f);
+    if(!matches.length){
+      awVoiceChoices.classList.add("hidden");
+      awSetStatus("No registered "+(kind||"FAR ending "+suffix)+" at "+f.Facility_Name+". No other facility selected.");
+    }else if(matches.length===1){awV66SelectAsset(f,matches[0]);}
+    else{
+      // Do not show an arbitrary asset as the answer: require a choice of exact FAR.
+      window.awVoiceAssetIds=new Set();renderAssets();
+      awV66ShowButtons(matches.length+" matching registered assets. Choose ONE FAR:",matches.map(a=>({label:"FAR "+clean(a.FAR_ID)+" — "+clean(a.AssetName||a.ComponentType||"Component"),value:a})),a=>awV66SelectAsset(f,a));
+      awSetStatus(matches.length+" matches at "+f.Facility_Name+"; select one FAR number.");
+    }
+    if(window.awRefreshMapPanel)window.awRefreshMapPanel();
+  }
+  function awV66Voice(transcripts){
+    const heard=transcripts[0]||"";el("awVoicePhrase").value=heard;
+    for(const raw of transcripts){
+      const speech=awV66Normal(awResolveAlias(raw));
+      if(/\b(clear all|reset|clear filters|start over|show everything)\b/.test(speech)){
+        awClearFacilitySelection();if(view)view.goTo({center:[27.3,-32.9],zoom:8}).catch(()=>{});return;
+      }
+      const kind=awV66AssetKind(raw),suffix=awV66Digits(raw);
+      const named=/\b(water treatment works|pump station|dam|facility)\b/.test(speech);
+      const candidates=awV66FacilityCandidates(raw);
+      let f=null;
+      if(candidates.length){
+        const best=candidates[0];
+        const close=candidates.filter(c=>c.score>=best.score-12);
+        if(close.length===1)f=best.facility;
+        else if(selected&&close.some(c=>clean(c.facility.Facility_ID)===clean(selected.Facility_ID)))f=selected;
+        else{
+          awV66ShowButtons("Several facilities match. Select ONE (no automatic guess):",close.map(c=>({label:c.facility.Facility_Name,value:c.facility})),chosen=>{
+            if(kind||suffix)awV66SearchAsset(chosen,kind,suffix);else awV66SelectFacility(chosen);
+          });awSetStatus("Choose the correct facility.");return;
+        }
+      }else if(named){
+        awSetStatus('No matching facility name/type for "'+heard+'". Nothing selected.');return;
+      }else if(selected){f=selected;}
+      if(f){if(kind||suffix)awV66SearchAsset(f,kind,suffix);else awV66SelectFacility(f);return;}
+      if(kind||suffix){awSetStatus("Select one facility first, then request "+(kind||"FAR ending "+suffix)+".");return;}
+    }
+    // Scheme-only voice navigation stays available.
+    awVoiceHandle(transcripts);
+  }
+
  if(!awSpeechAPI){awVoiceButton.disabled=true;awSetStatus("Speech recognition not supported. Use Chrome or Edge.");}else{
  const recognition=new awSpeechAPI();recognition.lang="en-ZA";recognition.interimResults=false;recognition.maxAlternatives=5;recognition.continuous=false;
  awVoiceButton.onclick=()=>{try{recognition.start();}catch(e){awSetStatus("Microphone: "+e.message);}};
  recognition.onstart=()=>{awVoiceButton.textContent="🎤 Listening...";awSetStatus("Say a scheme, facility or component, e.g. meters inside Nahoon WTW");};
- recognition.onresult=event=>{const alternatives=Array.from(event.results[0]||[]).map(r=>r.transcript).filter(Boolean);awVoiceHandleV65(alternatives);};
+ recognition.onresult=event=>{const alternatives=Array.from(event.results[0]||[]).map(r=>r.transcript).filter(Boolean);awV66Voice(alternatives);};
  recognition.onerror=event=>awSetStatus("Microphone: "+event.error);
  recognition.onend=()=>{awVoiceButton.textContent="🎤 Voice search";};
  }
@@ -902,7 +1032,7 @@ function awV6ApplyFilter(){
 el("scheme").onchange=awV6ApplyFilter;
 el("facilitySearch").oninput=awV6ApplyFilter;
 el("facility").onchange=e=>{window.awVoiceAssetIds=null;el("farSearch").value="";selectFacility(e.target.value,true);};
-el("farSearch").oninput=renderAssets;
+el("farSearch").oninput=()=>{window.awVoiceAssetIds=null;renderAssets();if(window.awRefreshMapPanel)window.awRefreshMapPanel();};
 start();
 </script>
 </body>

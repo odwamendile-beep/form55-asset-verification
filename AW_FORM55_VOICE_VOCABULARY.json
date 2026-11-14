@@ -40,11 +40,21 @@
     "pressure gauges": "pressure gauge",
     "generators": "generator",
     "filters": "filter",
-    "tanks": "tank"
+    "tanks": "tank",
+    "met flow": "flow meter",
+    "meter flow": "flow meter",
+    "flowmetre": "flow meter",
+    "flowmeter": "flow meter",
+    "flow meter": "flow meter",
+    "metering": "meter",
+    "meeters": "meter",
+    "flow metre": "flow meter"
   },
   "phrase_expansions": {
     "wtw": "water treatment works",
     "water treatment work": "water treatment works",
-    "ps": "pump station"
+    "ps": "pump station",
+    "w t w": "water treatment works",
+    "water treatment works": "water treatment works"
   }
 }
