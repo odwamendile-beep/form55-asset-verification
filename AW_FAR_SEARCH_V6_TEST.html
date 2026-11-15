@@ -1241,7 +1241,7 @@ function awClearFacilitySelection(){
 
  el("facilitySearch").value = "";
  el("farSearch").value = "";
- el("scheme").value = "";
+ // Preserve the scheme when restoring markers after deselection.
  window.awVoiceAssetIds=null;
  el("awVoiceChoices").classList.add("hidden");
  el("awVoiceChoices").replaceChildren();
@@ -1272,10 +1272,26 @@ console.log("AW approved map layers initialized.");
 
 
 
+   // Facility symbols remain visually small, but taps work within 24 screen pixels.
+   // Use screen-space proximity instead of depending on the symbol's 6px hit area.
+   // Ignore stale asynchronous events when the user taps rapidly.
+   let awTapSequence=0;
    view.on("click",async event=>{
-    const hit=await view.hitTest(event);
-    const found=hit.results.find(r=>r.graphic?.layer===graphicsLayer);
-    if(found){selectFacility(found.graphic.attributes.fid,false);}
+    const tapNumber=++awTapSequence;
+    if(!graphicsLayer?.visible)return;
+    const screen={x:event.x,y:event.y};
+    let candidate=null,nearest=24*24;
+    graphicsLayer.graphics.forEach(g=>{
+     if(!g.geometry || !g.attributes?.fid)return;
+     const p=view.toScreen(g.geometry);
+     if(!p)return;
+     const d=(p.x-screen.x)**2+(p.y-screen.y)**2;
+     if(d<=nearest){nearest=d;candidate=g;}
+    });
+    if(!candidate)return;
+    // Selecting an existing marker toggles it off on the second tap.
+    if(tapNumber!==awTapSequence)return;
+    selectFacility(candidate.attributes.fid,false);
    });
    view.when(resolve,reject);
   },reject);
