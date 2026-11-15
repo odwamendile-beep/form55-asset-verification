@@ -110,18 +110,9 @@ input,select{width:100%;padding:12px;border:1px solid #c7d0d3;border-radius:9px;
 /* AW_V61_LAYOUT */
 .aw-map-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
 .aw-map-heading h3{margin:0;font-size:16px}
-.aw-voice-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-#awVoiceButton{padding:8px 10px;font-size:12px}
-#awVoiceStatus{font-size:11px;color:#526577;max-width:240px;overflow-wrap:anywhere}
-.aw-voice-choices{padding:9px;background:#f2f6fa;border:1px solid #dbe3ec;border-radius:8px;margin-bottom:8px;font-size:12px}
-.aw-voice-choices button{font-size:11px;padding:6px 8px;margin:4px 4px 0 0}
-#awVoiceDictionary{font-size:11px;color:#526577;margin-bottom:9px}
-#awVoiceDictionary summary{cursor:pointer;display:inline-block;margin-bottom:5px}
 .aw-teach-row{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
 .aw-teach-row input,.aw-teach-row select{flex:1 1 130px;min-width:0;width:auto;margin:0;padding:7px;font-size:11px}
 .aw-teach-row button{font-size:11px;padding:8px}
-#awVoiceSaved{font-size:11px;margin-top:5px}
-#awVoiceSaved button{font-size:10px;padding:3px 6px;margin-left:6px}
 @media(max-width:600px){#map{height:52vh;min-height:350px}.aw-map-heading{align-items:flex-start}}
 
 /* V7: native-feeling map + three-position mobile bottom sheet. Desktop remains V6.9. */
@@ -144,12 +135,7 @@ input,select{width:100%;padding:12px;border:1px solid #c7d0d3;border-radius:9px;
  #map{position:absolute!important;inset:0;width:100%;height:100%!important;min-height:0!important;border-radius:0}
  #awMapPanel .aw-map-heading{position:absolute;top:96px;left:9px;right:9px;z-index:6;margin:0;display:block;pointer-events:none}
  #awMapPanel .aw-map-heading h3{display:none}
- #awVoiceToolbar{display:flex;align-items:center;gap:5px;pointer-events:auto}
- #awVoiceButton{font-size:12px!important;padding:10px 12px!important;border-radius:22px}
- #awVoiceStatus{max-width:190px;background:#fffffff0;padding:5px;border-radius:7px;color:#18323a}
  #awMapPanel > div[style*="font-size:11px"]{display:none}
- #awVoiceChoices{position:absolute;z-index:9;top:145px;left:9px;right:9px;max-height:32vh;overflow:auto;box-shadow:0 3px 15px #0003}
- #awVoiceDictionary{position:absolute;z-index:8;top:142px;left:9px;max-width:85vw;max-height:45vh;overflow:auto;background:#fffffff0;padding:5px 8px;border-radius:8px}
  #awMapTools{position:fixed;z-index:7;right:12px;bottom:calc(50dvh + 15px)}
  #awGpsStatus{position:fixed;bottom:calc(50dvh + 12px);z-index:7}
  #awSheet{position:fixed;left:0;right:0;bottom:0;z-index:12;height:50dvh;max-height:calc(100dvh - 44px);background:white;border-radius:18px 18px 0 0;box-shadow:0 -4px 24px #0004;display:flex;flex-direction:column;transition:height .22s ease;overflow:hidden;touch-action:pan-x}
@@ -178,20 +164,16 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .stat{background:linear-gradient(140deg,#e2f6e6,#f2faf3);color:#194a35}
 .asset{border-color:#c7e3cf;background:#fcfffc}
 .asset a{background:var(--aw-bottle)}
-#awVoiceButton{background:var(--aw-bottle)!important;color:#fff}
 #awResetAll{background:#315e49!important}
 #awMapTools button{background:#f0fff2;color:#16533b;border:1px solid #a5d4b3}
 #awMapTools button:active{background:#c8efd2}
 #awGpsStatus{background:#e9f9e9ee;color:#174a33}
-#awVoiceStatus{color:#1b5038}
 .aw-grip{background:#67b685}
 #awSheetHandle{color:#1d583f}
 @media(max-width:700px){
  header{background:linear-gradient(100deg,#103b2eec,#1c6448ec)}
  #awMapPanel{background:#c8dfd0}
  #awAuthPanel{background:#f2fff3ed;border:1px solid #b2d8bb}
- #awVoiceStatus{background:#ecfaeaf0;color:#174a34}
- #awVoiceDictionary{background:#f1fff1f0}
  #awSheet{background:#f1f9f1;border-top:2px solid #6fb88a;box-shadow:0 -5px 22px #06271970}
  #awSheetContent .panel{background:#fbfffb;border-color:#cbe3d1}
  #awSheetContent .stats{background:#e8f5e9}
@@ -213,8 +195,6 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
  #awMobileTabs button[aria-selected="true"]{background:#17533d;color:#fff}
  #awSheetContent .aw-tab-content[hidden]{display:none!important}
  #awSheetContent .aw-tab-content{padding:2px 0 14px}
- #awSheetContent #awVoiceToolbar{position:static!important;display:flex!important;flex-wrap:wrap;gap:8px;pointer-events:auto}
- #awSheetContent #awVoiceChoices,#awSheetContent #awVoiceDictionary{position:static!important;max-height:none!important;max-width:none!important;box-shadow:none!important;background:transparent!important;padding:8px 0!important}
  #awSheetContent #awMapTools{position:static!important;display:flex!important;flex-direction:row!important;gap:10px;align-items:center}
  #awSheetContent #awMapTools #awSheetToggle{display:none!important}
  #awSheetContent #awGpsStatus{position:static!important;max-width:none!important;margin:8px 0}
@@ -223,7 +203,6 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
  #awSheetContent #awExternalMapControls #awCollapse{display:none!important}
  #awSheetContent #awExternalMapControls select{width:100%;font-size:16px}
  #awSheetContent #awExternalCurrentView{display:block!important;position:static!important;width:auto!important;max-width:none!important;margin-top:10px;background:#e8f5e9!important;color:#17382c!important}
- #awMapPanel .aw-map-heading,#awMapPanel #awVoiceDictionary,#awMapPanel #awVoiceChoices,#awMapPanel #awMapTools,#awMapPanel #awGpsStatus{display:none!important}
  #awMapPanel .esri-ui-top-right,#awMapPanel .esri-ui-bottom-right{display:none!important}
  #awMapPanel .esri-ui-top-left{top:82px;left:12px}
  #awSheetHandle{background:#f1f9f1}
@@ -242,6 +221,16 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 #awAssetDetail .aw-verify-link{display:block;background:#176744;color:white;padding:13px;border-radius:10px;text-align:center;font-weight:700;margin-top:12px;text-decoration:none}
 #awAssetDetail .aw-photo-note{font-size:12px;color:#53695d}
 #assets .aw-detail-open{margin-top:8px;background:#1b6a49;color:white;border:0;border-radius:9px;padding:9px 12px;font-weight:600}
+
+#awFilterPanel{margin:10px 0!important;padding:12px!important}#awFilterPanel label{display:block;margin-top:5px}#awFilterPanel select{width:100%}
+@media(max-width:700px){#awSheet[data-position="closed"]{pointer-events:none!important;transform:translateY(110%)!important}}
+#awSheet[data-position="half"],#awSheet[data-position="full"]{pointer-events:auto!important}
+#awSheetHandle{cursor:pointer}
+#awMapTools{position:absolute!important;right:12px!important;bottom:14px!important;z-index:9!important;display:block!important}
+#awLocate{display:block!important}
+#awMapPanel{position:relative}
+#awFilterPanel~#awMapPanel{margin-top:0}
+#awMapPanel #awMapTools{display:block!important;position:absolute!important;right:10px!important;bottom:12px!important;z-index:15!important}#awMapPanel #awGpsStatus{display:block!important}#awFilterPanel #facilitySearch{display:none!important}
 </style>
 </head>
 <body>
@@ -257,10 +246,6 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 </section>
 <section id="workspace" class="hidden">
 <div class="panel" id="awMapPanel">
-<div class="aw-map-heading"><h3>Facility map</h3><div id="awVoiceToolbar" class="aw-voice-toolbar" aria-label="Voice navigation">
-<button type="button" id="awVoiceButton">🎤 Voice search</button><span id="awVoiceStatus" aria-live="polite">Ready</span>
-</div></div><div style="font-size:11px;color:#526577;margin:0 0 8px">Select a scheme first, then say a facility and component or FAR number. Example: “Nahoon Water Treatment Works”, then “flow meter”.</div><div id="awVoiceChoices" class="aw-voice-choices hidden" aria-live="polite"></div>
-<details id="awVoiceDictionary"><summary>Teach voice search a name</summary><div class="aw-teach-row"><input id="awVoicePhrase" placeholder="What Chrome hears, e.g. now on" aria-label="Phrase heard"><select id="awVoiceTarget" aria-label="Correct scheme or facility"><option value="">Select correct name</option></select><button type="button" id="awVoiceTeach">Save phrase</button></div><div id="awVoiceSaved"></div><div id="awVocabularyInfo" style="margin-top:6px">Loading vocabulary...</div><button type="button" id="awExportVocabulary" style="font-size:11px;padding:6px;margin-top:6px">Export AGOL names + voice vocabulary</button></details>
 <div id="map"></div>
 <div id="awMapTools"><button type="button" id="awLocate" aria-label="Locate my position" title="Locate my position">◎</button><button type="button" id="awSheetToggle" aria-label="Show asset search" title="Show asset search">☰</button></div>
 <div id="awGpsStatus" role="status" aria-live="polite"></div>
@@ -409,9 +394,9 @@ function awUpdateScopedKpis(){
  const list=awScopeFacilities();
  const ids=new Set(list.map(f=>clean(f.Facility_ID)));
  const assets=components.filter(a=>ids.has(clean(a.Facility_ID)));
- el("facilityCount").textContent=list.length;
- el("assetCount").textContent=assets.length;
- el("verifiedCount").textContent=assets.filter(isVerified).length;
+ if(el("facilityCount"))el("facilityCount").textContent=list.length;
+ if(el("assetCount"))el("assetCount").textContent=assets.length;
+ if(el("verifiedCount"))el("verifiedCount").textContent=assets.filter(isVerified).length;
 }
 function renderFacilities(){
  const visible=filteredFacilities();
@@ -430,69 +415,33 @@ function renderFacilities(){
 }
 function selectFacility(id,zoom=false){
  awV77CloseAsset();
- const previous=selected&&clean(selected.Facility_ID);
- // Tapping an already-selected pin again restores other pins in this scheme.
- const same=previous&&previous===clean(id);
+ const same=selected && clean(selected.Facility_ID)===clean(id);
  selected=same?null:(facilities.find(f=>clean(f.Facility_ID)===clean(id))||null);
- window.awVoiceFacilityFocus=selected?clean(selected.Facility_ID):null;
- window.awVoiceAssetIds=null;
- if(selected){
-  el("scheme").value=selected.Scheme||"";
-  el("facilitySearch").value="";
- }
+ if(selected){el("scheme").value=selected.Scheme||"";el("facilitySearch").value="";}
  el("farSearch").value="";
  renderFacilities();
- if(zoom && selected) awV6ZoomFacility(selected);
+ if(selected){ if(zoom)awV6ZoomFacility(selected); if(window.awOpenFacilityPanel)window.awOpenFacilityPanel(); }
+ else if(window.awCloseFacilityPanel)window.awCloseFacilityPanel();
 }
 function renderAssets(){
- const target=el("assets");
- target.replaceChildren();
- if(typeof window.awRefreshMapPanel==="function")
-  window.awRefreshMapPanel();
- if(!selected){
-  el("selectedTitle").textContent="Select a facility";
-  el("progress").textContent="";
-  target.textContent="Tap a facility pin or select a facility above.";
-  return;
- }
- const arr=facilityAssets(selected);
- const done=arr.filter(isVerified).length;
+ const target=el("assets");target.replaceChildren();
+ if(!selected){el("selectedTitle").textContent="Select a facility";el("progress").textContent="";return;}
+ const arr=facilityAssets(selected),done=arr.filter(isVerified).length;
  el("selectedTitle").textContent=selected.Facility_Name;
  el("progress").textContent=done+" of "+arr.length+" components verified";
- const term=norm(el("farSearch").value).replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
- const matches=arr.filter(a=>{
-  if(window.awVoiceAssetIds && !window.awVoiceAssetIds.has(clean(a.FAR_ID)+"|"+clean(a.Facility_ID)))return false;
-  const fields=[a.FAR_ID,a.ComponentType,a.AssetName,a.Building,a.Floor,a.Room];
-  return !term || fields.some(v=>norm(v).replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").includes(term));
- });
- if(!matches.length){target.textContent=window.awVoiceAssetIds ? "No registered component matches this request at the selected facility." : "No matching components.";return;}
+ const term=norm(el("farSearch").value).trim();
+ const matches=arr.filter(a=>!term||[a.FAR_ID,a.ComponentType,a.AssetName,a.Building,a.Floor,a.Room].some(v=>norm(v).includes(term)) || (term.length===4&&norm(a.FAR_ID).endsWith(term)));
  for(const a of matches){
-  const card=document.createElement("div");
-  card.className="asset";
-  const title=document.createElement("strong");
-  title.textContent=a.FAR_ID||"No FAR number";
-  const desc=document.createElement("div");
-  desc.textContent=a.ComponentType||a.AssetName||"Component";
-  const info=document.createElement("small");
-  info.textContent="Building: "+(a.Building||"-")+
-   " | Floor: "+(a.Floor||"-")+
-   " | Room: "+(a.Room||"-")+
-   " | "+(a.Verification_Status||"PENDING");
-  card.append(title,desc,info);
-  const detailButton=document.createElement("button");
-  detailButton.type="button";
-  detailButton.className="aw-detail-open";
-  detailButton.textContent="View asset details & historical photos";
-  detailButton.addEventListener("click",()=>awV77OpenAsset(a));
-  card.append(detailButton);
-  if(a.Survey123_Edit_URL){
-   const link=document.createElement("a");
-   link.href=a.Survey123_Edit_URL;
-   link.textContent="Verify Asset (existing form)";
-   card.append(link);
-  }
+  const card=document.createElement("div");card.className="asset";
+  const title=document.createElement("strong");title.textContent=a.FAR_ID||"No FAR number";
+  const desc=document.createElement("div");desc.textContent=a.ComponentType||a.AssetName||"Component";
+  const info=document.createElement("small");info.textContent="Building: "+(a.Building||"-")+" | Floor: "+(a.Floor||"-")+" | Room: "+(a.Room||"-")+" | "+(a.Verification_Status||"PENDING");
+  const button=document.createElement("button");button.type="button";button.textContent="View details and historical photos";button.onclick=()=>awV77OpenAsset(a);
+  card.append(title,desc,info,button);
+  if(a.Survey123_Edit_URL){const link=document.createElement("a");link.href=a.Survey123_Edit_URL;link.textContent="Verify in Survey123";card.append(link);}
   target.append(card);
  }
+ if(!matches.length)target.textContent="No matching FAR components at this facility.";
 }
 function renderMap(list){
  if(!graphicsLayer||!Graphic||!Point)return;
@@ -508,7 +457,7 @@ function renderMap(list){
   const s=status(f);
   graphicsLayer.add(new Graphic({
    geometry:new Point({longitude:lon,latitude:lat}),
-   symbol:{type:"simple-marker",style:"circle",size:12,
+   symbol:{type:"simple-marker",style:"circle",size:6,
     color:s.color,outline:{color:"white",width:1.5}},
    attributes:{fid:f.Facility_ID}
   }));
@@ -641,19 +590,7 @@ awPanel.innerHTML = `
     aria-label="Show pipelines" style="margin:0">
   </div>
 
-  <div style="height:1px;background:#e5eaf0;
-   margin:13px 0"></div>
 
-  <div style="font-size:10px;color:#64748b;
-   letter-spacing:1px;margin-bottom:7px">
-   CURRENT VIEW
-  </div>
-
-  <div id="awContext" aria-live="polite"
-   style="background:#f2f6fa;border-radius:8px;
-   padding:11px;line-height:1.5">
-   Loading facilities...
-  </div>
  </div>
 `;
 
@@ -665,468 +602,6 @@ awPanel.querySelector("#awCollapse").textContent="+";
 awPanel.querySelector("#awCollapse")
  .setAttribute("aria-expanded","false");
 
-
- // AW_V61_FLOATING_CONTROLS
- // Compact Current View sits at bottom-right; controls start collapsed.
- const awCurrentView = awPanel.querySelector("#awContext");
- if(!awCurrentView)throw Error("Current View missing");
- const awCurrentViewPanel=document.createElement("div");
- awCurrentViewPanel.style.cssText="background:rgba(255,255,255,.97);color:#183153;border:1px solid #dce4ec;border-radius:8px;padding:6px 8px;box-shadow:0 2px 9px #0002;width:145px;max-width:40vw;box-sizing:border-box;font:10px Arial,sans-serif;";
- awCurrentView.style.cssText="line-height:1.25;overflow-wrap:anywhere;font-size:10px";
- awCurrentViewPanel.appendChild(awCurrentView);
- view.ui.add(awCurrentViewPanel,"bottom-right");
-  awCurrentViewPanel.id="awCurrentViewFloating";
- awPanel.style.cssText="width:128px;max-width:36vw;box-sizing:border-box;background:rgba(255,255,255,.97);color:#183153;border:1px solid #dce4ec;border-radius:8px;box-shadow:0 2px 9px #0002;padding:7px;font:10px Arial,sans-serif;";
- awPanel.querySelector("strong").style.fontSize="11px";
- awPanel.querySelector("#awPanelBody").style.display="none";
- awPanel.querySelector("#awCollapse").textContent="+";
- awPanel.querySelector("#awCollapse").setAttribute("aria-expanded","false");
-
- // AW_V61_VOICE_NAVIGATION: page toolbar, not a map widget.
- const awVoiceButton=el("awVoiceButton"),awVoiceStatus=el("awVoiceStatus"),awVoiceChoices=el("awVoiceChoices");
- const awSpeechAPI=window.SpeechRecognition||window.webkitSpeechRecognition;
- let awVocabularyReady=false;
- const awAliasesDefault={}; // External vocabulary file is loaded below
- let awComponentAliases={};
- const awAliasKey="aw_form55_voice_aliases_v61";
- let awAliases={}; let awFileAliases={};
- try{const stored=JSON.parse(localStorage.getItem(awAliasKey)||"{}");if(stored&&typeof stored==="object"&&!Array.isArray(stored))awAliases=stored;}catch(e){}
- function awNormal(v){return String(v||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/&/g," and ").replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();}
- const awStop=new Set(["show","find","take","please","open","navigate","search","facility","facilities","scheme","the","for","and","assets","asset","components","component","to","go","me","water","treatment","works","station","plant","pump","pumping","inside","located","want","need","there","here","with","at","in"]);
- function awCleanCommand(v){return awNormal(v).split(" ").filter(w=>w&&!awStop.has(w)).join(" ");}
- function awEditDistance(a,b){const x=Array.from(a),y=Array.from(b),dp=Array.from({length:y.length+1},(_,i)=>i);for(let i=1;i<=x.length;i++){let prev=dp[0];dp[0]=i;for(let j=1;j<=y.length;j++){const old=dp[j];dp[j]=Math.min(dp[j]+1,dp[j-1]+1,prev+(x[i-1]===y[j-1]?0:1));prev=old;}}return dp[y.length];}
- function awCatalog(){return facilities.filter(f=>!el("scheme").value||f.Scheme===el("scheme").value).map(f=>({kind:"facility",name:f.Facility_Name,value:clean(f.Facility_ID)}));}
- function awResolveAlias(spoken){let phrase=awNormal(spoken);const all={...awAliasesDefault,...awFileAliases,...awAliases};const aliases=Object.entries(all).sort((a,b)=>b[0].length-a[0].length);for(const [from,to] of aliases){const term=awNormal(from);if(term && (phrase===term||phrase.includes(" "+term+" ")||phrase.startsWith(term+" ")||phrase.endsWith(" "+term))){phrase=phrase.replace(new RegExp("(^| )"+term.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"(?= |$)","g")," "+awNormal(to)).trim();}}return phrase;}
- function awScore(query,name){const q=awResolveAlias(query),n=awCleanCommand(name);if(!q||!n)return 0;if(q===n)return 100;if(q.includes(n)&&n.length>=4)return 95;if(n.includes(q)&&q.length>=4)return 86;const qt=q.split(" "),nt=n.split(" ");const hits=nt.filter(t=>qt.includes(t));const tokenScore=hits.length?Math.round(60*hits.length/nt.length+20*hits.length/qt.length):0;const distance=awEditDistance(q,n),ratio=1-distance/Math.max(q.length,n.length);return Math.max(tokenScore,ratio>=.72?Math.round(ratio*80):0);}
- function awSetStatus(t){awVoiceStatus.textContent=t;}
- function awShowChoices(items,caption){awVoiceChoices.replaceChildren();const lead=document.createElement("div");lead.textContent=caption;awVoiceChoices.append(lead);for(const item of items.slice(0,6)){const b=document.createElement("button");b.type="button";b.textContent=(item.kind==="scheme"?"Scheme: ":item.kind==="component"?"Asset: ":"Facility: ")+item.name;b.onclick=()=>{awVoiceChoices.classList.add("hidden");awNavigate(item);};awVoiceChoices.append(b);}awVoiceChoices.classList.remove("hidden");}
- function awNavigate(item){window.awVoiceAssetIds=null;if(item.kind==="component"){
-   if(item.facilityId && (!selected || clean(selected.Facility_ID)!==clean(item.facilityId)))selectFacility(item.facilityId,false);
-   el("farSearch").value=item.term;
-   renderAssets();
-   awSetStatus("Showing "+item.term+" in "+(selected?.Facility_Name||"selected facility"));
-   document.getElementById("assets").scrollIntoView({behavior:"smooth",block:"nearest"});
-   return;
-  }if(item.kind==="scheme"){el("facilitySearch").value="";el("scheme").value=item.value;awV6ApplyFilter();awSetStatus("Showing scheme: "+item.name);}else{selectFacility(item.value,true);awSetStatus("Selected facility: "+item.name);}}
- // AW_V63_COMPONENT_VOICE: context-aware search of the authenticated FAR register.
- function awComponentText(a){return awNormal([a.FAR_ID,a.ComponentType,a.AssetName,a.Building,a.Floor,a.Room].filter(Boolean).join(" "));}
- function awComponentTerm(raw){
-   let t=awNormal(raw);
-   const aliases={...awComponentAliases};
-   for(const [heard,canonical] of Object.entries(aliases).sort((a,b)=>b[0].length-a[0].length)){
-     const h=awNormal(heard),c=awNormal(canonical);
-     if(h && c && (" "+t+" ").includes(" "+h+" "))t=(" "+t+" ").replace(" "+h+" "," "+c+" ").trim();
-   }
-   return t;
- }
- function awComponentCandidates(phrase){
-   const tokens=awComponentTerm(phrase);
-   const vocabulary=["flow meter","bulk meter","water meter","pressure gauge","distribution board","control panel","electric motor","pump","meter","motor","valve","pipe","transformer","generator","switchgear","compressor","filter","tank","turbine","instrument","sensor"];
-   const configured=Object.values(awComponentAliases).map(awNormal);
-   const words=[...new Set([...configured,...vocabulary])].sort((a,b)=>b.length-a.length);
-   const matched=words.filter(w=>(" "+tokens+" ").includes(" "+w+" "));
-   if(matched.length){const first=matched[0];return [first,...matched.filter(w=>w!==first&&!first.includes(w))];}
-   // FAR numbers are searched as written, without assuming a component category.
-   const far=phrase.match(/\b(?:far|asset)\s*(?:number|no|id|code|#)?\s*[:#-]?\s*([a-z0-9][a-z0-9/-]{3,})\b/i);
-   return far?[awNormal(far[1])]:[];
- }
- function awVoiceComponent(transcripts){
-   const entries=awCatalog();
-   for(const transcript of transcripts){
-     const terms=awComponentCandidates(transcript);
-     if(!terms.length)continue;
-     // Identify a named facility in the same utterance, otherwise use the currently selected facility.
-     const spoken=awResolveAlias(transcript).replace(/\bwtw\b/g,"water treatment works").replace(/\bps\b/g,"pump station");
-     const possible=entries.filter(e=>e.kind==="facility").map(e=>({...e,score:Math.max(awScore(spoken,e.name), spoken.includes(awCleanCommand(e.name)) && awCleanCommand(e.name).length>=4 ? 97 : 0)})).filter(e=>e.score>=72).sort((a,b)=>b.score-a.score);
-     const exact=possible.filter(e=>e.score>=90);
-     let facility=exact[0]||possible[0]||null;
-     if(facility && possible.length>1 && possible[1].score>=facility.score-7){
-       const scoped=selected && possible.find(x=>x.value===clean(selected.Facility_ID));
-       if(scoped)facility=scoped;
-       else{awShowChoices(possible.slice(0,6),"Which facility should I search for "+terms[0]+"?");awSetStatus("Choose a facility, then repeat the component request.");return true;}
-     }
-     if(!facility && selected)facility={kind:"facility",value:clean(selected.Facility_ID),name:selected.Facility_Name};
-     if(!facility){
-       awSetStatus('Heard: "'+transcript+'" — select a facility first, or say its full name.');
-       awShowChoices(entries.filter(e=>e.kind==="facility").slice(0,6),"Select a facility before searching its components.");
-       return true;
-     }
-     const target=facilities.find(f=>clean(f.Facility_ID)===facility.value);
-     if(!target)return true;
-     const assets=facilityAssets(target);
-     let term=terms[0];
-     let matches=assets.filter(a=>awComponentText(a).includes(term));
-     // For generic plural commands, accept singular category; don't match unrelated assets.
-     if(!matches.length && term.endsWith("s")){term=term.slice(0,-1);matches=assets.filter(a=>awComponentText(a).includes(term));}
-     selectFacility(facility.value,true);
-     el("farSearch").value=term;
-     renderAssets();
-     awVoiceChoices.classList.add("hidden");
-     awSetStatus(matches.length ? matches.length+" "+term+" match(es) in "+target.Facility_Name : "No "+term+" recorded in "+target.Facility_Name);
-     document.getElementById("assets").scrollIntoView({behavior:"smooth",block:"nearest"});
-     return true;
-   }
-   return false;
- }
- function awVoiceHandle(transcripts){if(awVoiceComponent(transcripts))return;const entries=awCatalog();let ranked=[];for(const transcript of transcripts){for(const entry of entries){const score=awScore(transcript,entry.name);if(score>=57){const existing=ranked.find(r=>r.kind===entry.kind&&r.value===entry.value);if(existing)existing.score=Math.max(existing.score,score);else ranked.push({...entry,score});}}}ranked.sort((a,b)=>b.score-a.score|| (a.kind==="scheme"?-1:1));const heard=transcripts[0]||"";el("awVoicePhrase").value=heard;if(!ranked.length){awSetStatus('Heard: "'+heard+'" — no match');awShowChoices(entries.filter(e=>e.kind==="scheme"),"No confident match. Choose a scheme or teach this phrase below.");return;}const best=ranked[0];const near=ranked.filter(x=>x.score>=best.score-8);const schemeExact=near.find(x=>x.kind==="scheme"&&x.score>=95);if(schemeExact){awVoiceChoices.classList.add("hidden");awNavigate(schemeExact);return;}if(near.length>1){awSetStatus('Heard: "'+heard+'"');awShowChoices(near,"Several matches. Choose the correct one:");return;}if(best.score>=72){awVoiceChoices.classList.add("hidden");awNavigate(best);}else{awSetStatus('Heard: "'+heard+'"');awShowChoices(ranked,"Please confirm the matching name:");}}
- function awPopulateTargets(){const target=el("awVoiceTarget");target.replaceChildren(new Option("Select correct name",""));for(const entry of awCatalog().sort((a,b)=>a.kind.localeCompare(b.kind)||a.name.localeCompare(b.name))){const option=new Option((entry.kind==="scheme"?"Scheme: ":"Facility: ")+entry.name,entry.name);target.add(option);}}
- function awRenderSaved(){const div=el("awVoiceSaved");div.replaceChildren();const entries=Object.entries(awAliases);if(!entries.length){div.textContent="Custom phrases are saved in this browser only.";return;}for(const [from,to] of entries){const line=document.createElement("div");line.textContent=from+" → "+to;const remove=document.createElement("button");remove.textContent="Remove";remove.type="button";remove.onclick=()=>{delete awAliases[from];localStorage.setItem(awAliasKey,JSON.stringify(awAliases));awRenderSaved();};line.append(remove);div.append(line);}}
- el("awVoiceTeach").onclick=()=>{const phrase=awNormal(el("awVoicePhrase").value),target=el("awVoiceTarget").value;if(!phrase||!target){awSetStatus("Enter the words Chrome heard and select the correct name.");return;}awAliases[phrase]=target;try{localStorage.setItem(awAliasKey,JSON.stringify(awAliases));awSetStatus('Saved: "'+phrase+'" → '+target);}catch(e){awSetStatus("Could not save this phrase in browser storage.");}awRenderSaved();};
-
- // AW_V62_EXTERNAL_VOCABULARY
- async function awLoadVocabulary(){
-   try{
-     const response=await fetch("./AW_FORM55_VOICE_VOCABULARY.json",{cache:"no-store"});
-     if(!response.ok)throw Error("HTTP "+response.status);
-     const data=await response.json();
-     if(!data||typeof data.aliases!=="object"||Array.isArray(data.aliases))throw Error("Invalid vocabulary format");
-     awFileAliases={};
-     awComponentAliases={};
-     for(const [phrase,target] of Object.entries(data.aliases)){
-       if(typeof target==="string"&&phrase.trim()&&target.trim())awFileAliases[awNormal(phrase)]=target.trim();
-     }
-     if(data.component_aliases && typeof data.component_aliases==="object"){
-       for(const [phrase,target] of Object.entries(data.component_aliases)){
-         if(typeof target==="string" && phrase.trim() && target.trim())awComponentAliases[awNormal(phrase)]=awNormal(target);
-       }
-     }
-     awVocabularyReady=true;
-     awSetStatus("Ready · "+Object.keys(awFileAliases).length+" place phrases, "+Object.keys(awComponentAliases).length+" asset phrases loaded");
-     const info=el("awVocabularyInfo");if(info)info.textContent=Object.keys(awFileAliases).length+" place phrases + "+Object.keys(awComponentAliases).length+" asset phrases loaded";
-   }catch(error){
-     const info=el("awVocabularyInfo");if(info)info.textContent="Vocabulary file not loaded; manual corrections still work";
-     console.warn("Form 55 vocabulary:",error.message);
-   }
- }
- function awExportRegisterVocabulary(){
-   const names=awCatalog();
-   const payload={version:1,description:"Actual scheme and facility names from the authenticated AGOL register. Add aliases to the aliases object and upload the JSON file to GitHub.",schemes:names.filter(x=>x.kind==="scheme").map(x=>x.name),facilities:names.filter(x=>x.kind==="facility").map(x=>x.name),aliases:{...awFileAliases,...awAliases},component_aliases:awComponentAliases};
-   const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
-   const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="AW_FORM55_VOICE_VOCABULARY.json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
- }
- el("awExportVocabulary").onclick=awExportRegisterVocabulary;
- window.awV61PopulateTargets=awPopulateTargets;awPopulateTargets();awRenderSaved();awLoadVocabulary();
-
- // AW_V65_CONTEXTUAL_ASSET_SEARCH — natural phrases, WTW/PS, FAR suffix, scoped results.
- const awV65Stop=new Set(["show","find","search","locate","take","me","to","the","a","an","all","please","inside","within","at","in","of","from","for","assets","asset","components","component","equipment","number","no","code","far","ending","ends","last","digits","digit","with","and","there","here"]);
- const awV65Types={"meters":"meter","metering":"meter","water meters":"meter","flow meters":"flow meter","flowmeters":"flow meter","pumps":"pump","motors":"motor","valves":"valve","gauges":"gauge","pressure gauges":"pressure gauge","distribution boards":"distribution board","db boards":"distribution board","db board":"distribution board","generators":"generator","tanks":"tank","filters":"filter","sensors":"sensor","pipes":"pipe","transformers":"transformer","switchgear":"switchgear"};
- function awV65Expand(v){return awNormal(v).replace(/\bwtw\b/g,"water treatment works").replace(/\bw t w\b/g,"water treatment works").replace(/\bps\b/g,"pump station").replace(/\bp s\b/g,"pump station").replace(/\bwwtw\b/g,"wastewater treatment works").replace(/\bworks\b/g,"works");}
- function awV65Words(v){return awV65Expand(v).split(" ").filter(w=>w.length>1&&!awV65Stop.has(w));}
- function awV65FarSuffix(text){
-   const raw=awNormal(text);
-   const digitWords={zero:"0",oh:"0",one:"1",two:"2",three:"3",four:"4",five:"5",six:"6",seven:"7",eight:"8",nine:"9"};
-   const converted=raw.replace(/\b(zero|oh|one|two|three|four|five|six|seven|eight|nine)(?:\s+(?:zero|oh|one|two|three|four|five|six|seven|eight|nine)){3,}\b/g,m=>m.split(" ").map(x=>digitWords[x]).join(""));
-   const explicit=converted.match(/\b(?:last\s+four\s+(?:digits|numbers)|ending\s+(?:in|with)?|ends\s+(?:in|with)?|far\s+(?:number|no|id|code)?|asset\s+(?:number|no|id|code)?)\s*([0-9][0-9\s-]{2,})\b/);
-   if(explicit){const digits=explicit[1].replace(/\D/g,"");if(digits.length>=4)return digits;}
-   const four=converted.match(/\b\d{4}\b/);
-   return four?four[0]:null;
- }
- function awV65Type(text){
-   const phrase=" "+awV65Expand(text)+" ";
-   const aliases={...awV65Types,...awComponentAliases};
-   for(const [from,to] of Object.entries(aliases).sort((a,b)=>b[0].length-a[0].length)){
-     if(phrase.includes(" "+awNormal(from)+" "))return awNormal(to);
-   }
-   const types=["flow meter","water meter","pressure gauge","distribution board","control panel","electric motor","pump station","meter","pump","motor","valve","pipe","transformer","generator","switchgear","compressor","filter","tank","turbine","instrument","sensor","building"];
-   return types.find(t=>phrase.includes(" "+t+" "))||null;
- }
- function awV65Facilities(utterance){
-   const speech=awV65Expand(awResolveAlias(utterance));
-   const words=awV65Words(speech);
-   const specificType=/(water treatment works|wastewater treatment works|pump station)/.test(speech);
-   const candidates=facilities.map(f=>{
-     const name=awV65Expand(f.Facility_Name);
-     const fw=awV65Words(name);
-     const unique=fw.filter(w=>!["water","treatment","works","pump","station","plant","facility"].includes(w));
-     const overlap=unique.filter(w=>words.includes(w)).length;
-     const exact=speech.includes(name) && name.length>5;
-     const named=unique.length>0 && overlap>0;
-     const typeMatch=!specificType || (speech.includes("water treatment works")&&name.includes("water treatment works")) || (speech.includes("pump station")&&name.includes("pump station"));
-     const scheme=awV65Expand(f.Scheme);
-     const schemeHit=scheme.length>2 && speech.includes(scheme);
-     const score=(exact?120:0)+(named?overlap*22:0)+(schemeHit?14:0)+(typeMatch&&specificType?35:0)+((named||schemeHit)&&!typeMatch?-50:0);
-     return {facility:f,score};
-   }).filter(x=>x.score>=20).sort((a,b)=>b.score-a.score);
-   return candidates;
- }
- function awV65ShowFacilities(candidates,term){
-   awVoiceChoices.replaceChildren();
-   const lead=document.createElement("div");lead.textContent="Choose the facility for "+term+":";awVoiceChoices.append(lead);
-   for(const x of candidates.slice(0,8)){
-     const b=document.createElement("button");b.type="button";b.textContent=x.facility.Facility_Name+" ("+(x.facility.Scheme||"")+")";
-     b.onclick=()=>{awVoiceChoices.classList.add("hidden");awV65Apply(x.facility,term);};awVoiceChoices.append(b);
-   }
-   awVoiceChoices.classList.remove("hidden");
- }
- function awV65Apply(f,term){
-   selectFacility(f.Facility_ID,true);
-   el("farSearch").value="";
-   const suffix=awV65FarSuffix(term);
-   const type=awV65Type(term);
-   const remainder=awV65Expand(term).replace(/\b(?:water treatment works|pump station|wtw)\b/g," ");
-   const matches=facilityAssets(f).filter(a=>{
-     const far=clean(a.FAR_ID).replace(/\D/g,"");
-     if(suffix && !far.endsWith(suffix))return false;
-     if(type){const text=awV65Expand([a.ComponentType,a.AssetName,a.Building,a.Room].join(" "));if(!text.includes(type))return false;}
-     return true;
-   });
-   window.awVoiceAssetIds=new Set(matches.map(a=>clean(a.FAR_ID)+"|"+clean(a.Facility_ID)));
-   renderAssets();
-   awSetStatus(matches.length+" matching FAR component(s) in "+f.Facility_Name+(suffix?" · FAR ends "+suffix:"")+(type?" · "+type:""));
-   awVoiceChoices.classList.add("hidden");
-   el("assets").scrollIntoView({behavior:"smooth",block:"nearest"});
- }
- function awVoiceHandleV65(transcripts){
-   const first=transcripts[0]||"";
-   el("awVoicePhrase").value=first;
-   for(const phrase of transcripts){
-     const speech=awV65Expand(awResolveAlias(phrase));
-     if(/\b(clear|reset|start over|remove filters|show everything)\b/.test(speech)){
-       awClearFacilitySelection();return;
-     }
-     const type=awV65Type(phrase),suffix=awV65FarSuffix(phrase);
-     if(!type&&!suffix)continue;
-     const candidates=awV65Facilities(phrase);
-     let facility=null;
-     if(candidates.length){
-       const top=candidates[0];
-       const near=candidates.filter(x=>x.score>=top.score-12);
-       if(near.length>1){
-         const current=selected&&near.find(x=>clean(x.facility.Facility_ID)===clean(selected.Facility_ID));
-         if(current)facility=current.facility;
-         else{awV65ShowFacilities(near,phrase);awSetStatus("Several facilities match. Select the correct one.");return;}
-       }else facility=top.facility;
-     }
-     if(!facility)facility=selected;
-     if(!facility){awSetStatus('Heard: "'+first+'". Select a facility, or include its name in the command.');return;}
-     awV65Apply(facility,phrase);
-     return;
-   }
-   window.awVoiceAssetIds=null;
-   awVoiceHandle(transcripts);
- }
-
-
-  // AW_V66_STRICT_HIERARCHY — exactly one facility and at most one FAR asset.
-  // Never guess another facility or fabricate a component when the register has no match.
-  let awV66LastRequest="";
-  const awV66Types={"met flow":"flow meter","meter flow":"flow meter","flowmetre":"flow meter","flowmeter":"flow meter","flow meters":"flow meter","flow meter":"flow meter","water meter":"meter","bulk meter":"meter","metre":"meter","meeter":"meter","meters":"meter","pumps":"pump","pump sets":"pump","motors":"motor","valves":"valve","db board":"distribution board","distribution boards":"distribution board","pressure gauges":"pressure gauge","gauges":"gauge"};
-  function awV66Normal(v){return awNormal(v).replace(/\bwater treatment work\b/g,"water treatment works").replace(/\b(w t w|wtw)\b/g,"water treatment works").replace(/\b(p s|ps)\b/g,"pump station").replace(/\bflowmeters?\b/g,"flow meter").replace(/\bmet flow\b/g,"flow meter");}
-  function awV66Tokens(v){return awV66Normal(v).split(" ").filter(Boolean);}
-  function awV66FacilityName(f){return awV66Normal(f.Facility_Name);}
-  // V7.5: AGOL facility register is authoritative. Fuzzy matching is used ONLY
-  // to suggest a facility; the operator confirms before the map changes.
-  function awV75Sound(v){return awNormal(v).replace(/ph/g,"f").replace(/qu/g,"kw").replace(/ck/g,"k").replace(/c(?=[eiy])/g,"s").replace(/c/g,"k").replace(/oo/g,"u").replace(/ou/g,"u").replace(/ee/g,"i").replace(/y/g,"i").replace(/([a-z])\1+/g,"$1").replace(/[aeiou]/g,"");}
-  function awV75WordScore(a,b){
-    if(a===b)return 1;
-    if(a.length<3||b.length<3)return 0;
-    const x=awV75Sound(a),y=awV75Sound(b);
-    if(x.length>=3&&x===y)return .91;
-    const dist=awEditDistance(a,b),ratio=1-dist/Math.max(a.length,b.length);
-    return ratio>=.68?ratio*.9:0;
-  }
-  function awV66FacilityCandidates(phrase){
-    const speech=awV66Normal(awResolveAlias(phrase));
-    const requestedWTW=/\bwater treatment works\b/.test(speech);
-    const requestedPS=/\bpump station\b/.test(speech);
-    const requestedDam=/\bdam\b/.test(speech);
-    const requestedRes=/\breservoir\b/.test(speech);
-    const stop=new Set(["find","show","search","take","me","to","inside","in","at","the","a","an","my","please","asset","component","far","number","with","for","on","water","treatment","works","pump","station","dam","meter","flow","motor","valve","board","gauge","of","and","scheme","facility","reservoir"]);
-    const words=awV66Tokens(speech).filter(w=>!stop.has(w)&&w.length>=3);
-    return facilities.filter(f=>!el("scheme").value || f.Scheme===el("scheme").value).map(f=>{
-      const name=awV66FacilityName(f), raw=awNormal(f.Facility_Name);
-      if(requestedWTW&&!name.includes("water treatment works"))return null;
-      if(requestedPS&&!name.includes("pump station")&&!/pumpstation/.test(raw))return null;
-      if(requestedDam&&!name.includes("dam"))return null;
-      if(requestedRes&&!name.includes("reservoir")&&!/\bres\b/.test(raw))return null;
-      const nameWords=awV66Tokens(name).filter(w=>!stop.has(w)&&w.length>=3);
-      const similarities=words.map(w=>Math.max(0,...nameWords.map(n=>awV75WordScore(w,n))));
-      const good=similarities.filter(x=>x>=.65);
-      const exact=speech===name || (name.length>=6&&speech.includes(name));
-      if(!exact&&!good.length)return null;
-      const score=exact?150:Math.round(good.reduce((a,v)=>a+v,0)*38/Math.max(words.length,nameWords.length,1))+(good.length===words.length?15:0)+(requestedWTW||requestedPS||requestedDam||requestedRes?20:0);
-      return {facility:f,score};
-    }).filter(Boolean).sort((a,b)=>b.score-a.score||a.facility.Facility_Name.localeCompare(b.facility.Facility_Name));
-  }
-  function awV66AssetKind(phrase){
-    const text=" "+awV66Normal(phrase)+" ";
-    if(text.includes(" pump station ") && !/\b(meter|motor|valve|flow|generator|gauge)\b/.test(text))return null;
-    const dict={...awV66Types,...awComponentAliases};
-    for(const [alias,canonical] of Object.entries(dict).sort((a,b)=>b[0].length-a[0].length)){
-      if(text.includes(" "+awV66Normal(alias)+" "))return awV66Normal(canonical);
-    }
-    const known=["flow meter","distribution board","pressure gauge","control panel","electric motor","meter","pump","motor","valve","filter","generator","sensor","transformer","tank","pipe","instrument"];
-    return known.find(w=>text.includes(" "+w+" "))||null;
-  }
-  function awV66Digits(phrase){
-    let t=awV66Normal(phrase);
-    const names={zero:"0",oh:"0",one:"1",two:"2",three:"3",four:"4",five:"5",six:"6",seven:"7",eight:"8",nine:"9"};
-    t=t.replace(/\b(?:zero|oh|one|two|three|four|five|six|seven|eight|nine)(?:\s+(?:zero|oh|one|two|three|four|five|six|seven|eight|nine)){3,}\b/g,m=>m.split(" ").map(w=>names[w]).join(""));
-    const m=t.match(/\b(?:far|asset|ending|ends|last four|last 4)\b[^0-9]{0,30}(\d[\d\s-]{3,})/);
-    if(m){const digits=m[1].replace(/\D/g,"");return digits.length>=4?digits.slice(-4):null;}
-    const lone=t.match(/\b\d{4}\b/);
-    return lone?lone[0]:null;
-  }
-  function awV66ShowButtons(title,items,onChoose){
-    awVoiceChoices.replaceChildren();const intro=document.createElement("div");intro.textContent=title;awVoiceChoices.append(intro);
-    for(const item of items.slice(0,12)){
-      const b=document.createElement("button");b.type="button";b.textContent=item.label;
-      b.onclick=()=>{awVoiceChoices.classList.add("hidden");onChoose(item.value);};awVoiceChoices.append(b);
-    }
-    awVoiceChoices.classList.remove("hidden");
-  }
-  function awV66SelectFacility(f){
-    window.awVoiceFacilityFocus=clean(f.Facility_ID);
-    window.awVoiceAssetIds=null;el("farSearch").value="";
-    selectFacility(f.Facility_ID,true);
-    awVoiceChoices.classList.add("hidden");
-    awSetStatus("Facility selected: "+f.Facility_Name+". Say a component or FAR last four digits.");
-  }
-  function awV66SelectAsset(f,a){
-    window.awVoiceFacilityFocus=clean(f.Facility_ID);
-    window.awVoiceAssetIds=new Set([clean(a.FAR_ID)+"|"+clean(a.Facility_ID)]);
-    el("farSearch").value="";
-    selected=f;renderFacilities();renderAssets();
-    awVoiceChoices.classList.add("hidden");
-    awSetStatus("1 registered component: FAR "+clean(a.FAR_ID)+" at "+f.Facility_Name);
-    if(window.awRefreshMapPanel)window.awRefreshMapPanel();
-  }
-  function awV66SearchAsset(f,kind,suffix){
-    const all=facilityAssets(f);
-    const matches=all.filter(a=>{
-      if(suffix && !clean(a.FAR_ID).replace(/\D/g,"").endsWith(suffix))return false;
-      if(kind){
-        const description=awV66Normal([a.ComponentType,a.AssetName].filter(Boolean).join(" "));
-        const words=awV66Tokens(kind);
-        if(!words.every(w=>awV66Tokens(description).includes(w)))return false;
-      }
-      return true;
-    });
-    // Show exactly the requested facility pin, regardless of whether an asset exists.
-    window.awVoiceFacilityFocus=clean(f.Facility_ID);
-    selected=f;el("farSearch").value="";
-    window.awVoiceAssetIds=new Set(matches.map(a=>clean(a.FAR_ID)+"|"+clean(a.Facility_ID)));
-    renderFacilities();renderAssets();awV6ZoomFacility(f);
-    if(!matches.length){
-      awVoiceChoices.classList.add("hidden");
-      awSetStatus("No registered "+(kind||"FAR ending "+suffix)+" at "+f.Facility_Name+". No other facility selected.");
-    }else if(matches.length===1){awV66SelectAsset(f,matches[0]);}
-    else{
-      // Do not show an arbitrary asset as the answer: require a choice of exact FAR.
-      window.awVoiceAssetIds=new Set();renderAssets();
-      awV66ShowButtons(matches.length+" matching registered assets. Choose ONE FAR:",matches.map(a=>({label:"FAR "+clean(a.FAR_ID)+" — "+clean(a.AssetName||a.ComponentType||"Component"),value:a})),a=>awV66SelectAsset(f,a));
-      awSetStatus(matches.length+" matches at "+f.Facility_Name+"; select one FAR number.");
-    }
-    if(window.awRefreshMapPanel)window.awRefreshMapPanel();
-  }
-  // V7.3: speech is a proposal, never an automatic navigation command.
-  // A facility must be confirmed before a component can be searched.
-  function awV73Confirm(label,action){
-    awV66ShowButtons("Heard: “"+el("awVoicePhrase").value+"”. Confirm the intended action:",
-      [{label:"✓ "+label,value:true},{label:"Cancel — try speaking again",value:false}],
-      yes=>{if(yes)action();else awSetStatus("Search cancelled. Tap Voice search to try again.");});
-  }
-  function awV66Voice(transcripts){
-    const heard=(transcripts[0]||"").trim();
-    el("awVoicePhrase").value=heard;
-    awVoiceChoices.classList.add("hidden");
-    if(!heard){awSetStatus("No speech detected. Try again closer to the microphone.");return;}
-    const speech=awV66Normal(awResolveAlias(heard));
-    awSetStatus('Microphone heard: “'+heard+'”. Review before confirming.');
-    if(/\b(clear all|reset|clear filters|start over|show everything)\b/.test(speech)){
-      awV73Confirm("Reset all facility and component filters",()=>awClearFacilitySelection());return;
-    }
-    const kind=awV66AssetKind(heard),suffix=awV66Digits(heard);
-    const named=/\b(water treatment works|pump station|dam|facility)\b/.test(speech);
-    if(!el("scheme").value){awSetStatus("Select a scheme first, then speak the facility name.");return;}
-    const candidates=awV66FacilityCandidates(heard);
-    if(speech.length<=2 && !selected){awSetStatus('Heard: “'+heard+'”. Too short to identify a facility safely. Please say the full name, e.g. Nahoon Water Treatment Works.');return;}
-    const best=candidates[0];
-    // Never use a loosely matching facility. Require either exact name or
-    // a clear place-name + facility type, otherwise ask the user to choose.
-    let f=null;
-    if(best){
-      const close=candidates.filter(c=>c.score>=best.score-12);
-      if(close.length===1 && best.score>=42)f=best.facility;
-      else if(close.length>1 && best.score>=28){
-        awV66ShowButtons("More than one facility matches what was heard. Choose the correct one:",
-          close.slice(0,8).map(c=>({label:c.facility.Facility_Name,value:c.facility})),
-          chosen=>awV73Confirm("Use "+chosen.Facility_Name,()=>{
-            if(kind||suffix)awV66SearchAsset(chosen,kind,suffix);else awV66SelectFacility(chosen);
-          }));return;
-      }
-    }
-    if(f){
-      const action=(kind||suffix)?"Find "+(kind||"FAR ending "+suffix)+" at "+f.Facility_Name:"Select "+f.Facility_Name;
-      awV73Confirm(action,()=>{if(kind||suffix)awV66SearchAsset(f,kind,suffix);else awV66SelectFacility(f);});return;
-    }
-    if(candidates.length && best.score>=24 && !selected){
-      awV66ShowButtons("Possible registered facilities — select only if correct:",
-        candidates.slice(0,6).map(c=>({label:c.facility.Facility_Name,value:c.facility})),
-        chosen=>awV73Confirm("Select "+chosen.Facility_Name,()=>awV66SelectFacility(chosen)));
-      awSetStatus('Heard: “'+heard+'”. Recognition uncertain. Please choose a facility.');return;
-    }
-    if(named){awSetStatus('Heard: “'+heard+'”. No confident facility match. Nothing changed.');return;}
-    if(selected && (kind||suffix)){
-      const current=selected;
-      awV73Confirm("Find "+(kind||"FAR ending "+suffix)+" at "+current.Facility_Name,
-        ()=>awV66SearchAsset(current,kind,suffix));return;
-    }
-    if(kind||suffix){awSetStatus('Heard: “'+heard+'”. Select a facility first, then speak the component.');return;}
-    awSetStatus('Heard: “'+heard+'”. No confident match. Nothing changed; try the full facility name.');
-  }
-  if(!awSpeechAPI){awVoiceButton.disabled=true;awSetStatus("Speech recognition unavailable in this browser. Try Chrome on Android.");}else{
-    const recognition=new awSpeechAPI();
-    recognition.lang="en-ZA";
-    recognition.interimResults=true;
-    recognition.maxAlternatives=5;
-    recognition.continuous=false;
-    let finalPhrases=[];let speechAlternatives=[];
-    awVoiceButton.onclick=()=>{
-      try{finalPhrases=[];speechAlternatives=[];if(!awVocabularyReady){awSetStatus("Vocabulary not loaded yet. Check Layers & View / Teach voice search status.");return;}recognition.start();}
-      catch(e){awSetStatus("Microphone: "+e.message+". Wait a moment and retry.");}
-    };
-    recognition.onstart=()=>{
-      awVoiceButton.textContent="🎤 Listening…";
-      awSetStatus("Listening. Say the facility name first; pause when finished.");
-    };
-    recognition.onspeechend=()=>awSetStatus("Processing what you said…");
-    recognition.onresult=event=>{
-      const interim=[];
-      for(let i=0;i<event.results.length;i++){
-        const result=event.results[i];
-        const phrase=(result[0]&&result[0].transcript||"").trim();
-        if(!phrase)continue;
-        if(result.isFinal){finalPhrases[i]=phrase;for(let k=0;k<result.length;k++){const alt=(result[k]?.transcript||"").trim();if(alt&&!speechAlternatives.includes(alt))speechAlternatives.push(alt);}}
-        else interim.push(phrase);
-      }
-      const current=[...finalPhrases.filter(Boolean),...interim].join(" ").trim();
-      if(current){el("awVoicePhrase").value=current;awSetStatus('Hearing: “'+current+'”');}
-    };
-    recognition.onerror=event=>{
-      const hints={"not-allowed":"Microphone permission blocked. Allow microphone access in Chrome site settings.","no-speech":"No speech detected. Move closer and speak clearly.","network":"Speech service unavailable. Check your connection.","audio-capture":"Microphone unavailable. Check phone permissions."};
-      awSetStatus(hints[event.error]||"Microphone: "+event.error);
-    };
-    recognition.onend=()=>{
-      awVoiceButton.textContent="🎤 Voice search";
-      const phrase=finalPhrases.filter(Boolean).join(" ").trim();
-      if(phrase){
-        // Consider alternative recognizer transcripts, but never silently choose a different facility.
-        const heardOptions=[phrase,...speechAlternatives.filter(x=>x!==phrase)];
-        const viable=heardOptions.map(t=>({text:t, candidates:awV66FacilityCandidates(t)}));
-        const primary=viable[0];
-        const selectedOption=primary.candidates.length?primary:viable.find(x=>x.candidates.length);
-        if(selectedOption && selectedOption.text!==phrase){
-          awSetStatus('Phone heard “'+phrase+'”; alternative: “'+selectedOption.text+'”. Please confirm.');
-          awV66ShowButtons('Speech alternatives — choose what you meant:',[
-            {label:'Use “'+selectedOption.text+'”',value:selectedOption.text},
-            {label:'Use “'+phrase+'”',value:phrase}
-          ],chosen=>awV66Voice([chosen]));
-        }else awV66Voice([phrase]);
-      }
-      else if(el("awVoicePhrase").value.trim())awSetStatus('Speech was not finalised. Heard: “'+el("awVoicePhrase").value+'”. Tap Voice search and try again.');
-    };
-  }
 
  const awControl = id => awPanel.querySelector("#" + id);
 
@@ -1156,97 +631,14 @@ awControl("awCollapse").onclick = function(){
 };
 
 
-function awRefreshMapPanel(){
- const target = document.getElementById("awContext");
- if(!target || !view) return;
-
- target.replaceChildren();
-
- const header = document.createElement("div");
- header.style.cssText =
-  "display:flex;align-items:center;" +
-  "justify-content:space-between;gap:8px;" +
-  "margin-bottom:7px";
-
- const heading = document.createElement("strong");
- heading.textContent = "Current view";
- heading.style.fontSize = "10px";
-
- const refresh = document.createElement("button");
- refresh.type = "button";
- refresh.textContent = "↻";
- refresh.title = "Clear selected facility";
- refresh.setAttribute("aria-label","Clear selected facility");
- refresh.style.cssText =
-  "border:1px solid #dbe3ec;background:white;" +
-  "border-radius:6px;padding:1px 5px;" +
-  "color:#183153;cursor:pointer;font-size:12px";
-
- refresh.onclick = awClearFacilitySelection;
-
- header.append(heading,refresh);
- target.appendChild(header);
-
- function addLine(value,css){
-  const div = document.createElement("div");
-  div.textContent = value;
-  if(css) div.style.cssText = css;
-  target.appendChild(div);
- }
-
- if(selected){
-  const count = facilityAssets(selected).length;
-
-  addLine(count.toLocaleString()+" FAR components",
-   "font-size:12px;font-weight:bold;margin-bottom:3px");
-
-  addLine(selected.Facility_Name || "Selected facility",
-   "font-size:10px;color:#526577;overflow-wrap:anywhere");
-
-  return;
- }
-
- const extent = view.extent;
-
- const visible = graphicsLayer.visible && extent
-  ? graphicsLayer.graphics.filter(g =>
-     g.geometry && extent.contains(g.geometry)
-    )
-  : [];
-
- addLine(
-  visible.length.toLocaleString() +
-  (visible.length===1 ? " facility visible" : " facilities visible"),
-  "font-size:12px;font-weight:bold;margin-bottom:3px"
- );
-
- if(visible.length===1){
-  const id = visible[0].attributes?.fid;
-  const facility = facilities.find(f =>
-   clean(f.Facility_ID)===clean(id)
-  );
-
-  if(facility){
-   addLine(facility.Facility_Name,
-    "font-size:10px;color:#526577;" +
-    "border-top:1px solid #e5eaf0;" +
-    "padding-top:6px;overflow-wrap:anywhere");
-  }
- }
-}
+function awRefreshMapPanel(){ /* Map remains the primary interface. */ }
 
 function awClearFacilitySelection(){
- window.awVoiceFacilityFocus=null;
  selected = null;
 
  el("facilitySearch").value = "";
  el("farSearch").value = "";
- // Preserve the scheme when restoring markers after deselection.
- window.awVoiceAssetIds=null;
- el("awVoiceChoices").classList.add("hidden");
- el("awVoiceChoices").replaceChildren();
- el("awVoicePhrase").value="";
- el("awVoiceStatus").textContent="Ready — all filters cleared";
+ el("scheme").value = "";
 
  renderFacilities();
  awRefreshMapPanel();
@@ -1272,26 +664,20 @@ console.log("AW approved map layers initialized.");
 
 
 
-   // Facility symbols remain visually small, but taps work within 24 screen pixels.
-   // Use screen-space proximity instead of depending on the symbol's 6px hit area.
-   // Ignore stale asynchronous events when the user taps rapidly.
-   let awTapSequence=0;
    view.on("click",async event=>{
-    const tapNumber=++awTapSequence;
-    if(!graphicsLayer?.visible)return;
-    const screen={x:event.x,y:event.y};
-    let candidate=null,nearest=24*24;
-    graphicsLayer.graphics.forEach(g=>{
-     if(!g.geometry || !g.attributes?.fid)return;
-     const p=view.toScreen(g.geometry);
-     if(!p)return;
-     const d=(p.x-screen.x)**2+(p.y-screen.y)**2;
-     if(d<=nearest){nearest=d;candidate=g;}
-    });
-    if(!candidate)return;
-    // Selecting an existing marker toggles it off on the second tap.
-    if(tapNumber!==awTapSequence)return;
-    selectFacility(candidate.attributes.fid,false);
+    const hit=await view.hitTest(event,{include:[graphicsLayer]});
+    let found=hit.results.find(r=>r.graphic?.layer===graphicsLayer);
+    let id=found?.graphic?.attributes?.fid;
+    if(!id){
+      let best=25;
+      for(const g of graphicsLayer.graphics.toArray()){
+        const screen=view.toScreen(g.geometry);
+        if(!screen)continue;
+        const distance=Math.hypot(screen.x-event.x,screen.y-event.y);
+        if(distance<best){best=distance;id=g.attributes?.fid;}
+      }
+    }
+    if(id)selectFacility(id,false);
    });
    view.when(resolve,reject);
   },reject);
@@ -1315,7 +701,7 @@ async function start(){
   el("notice").textContent="Online asset register loaded.";
   await initMap();
   awV72SetupCleanMap();
-  if(window.awV61PopulateTargets)window.awV61PopulateTargets();
+  
   renderFacilities();
  }catch(e){
   el("notice").textContent="Loading failed: "+e.message;
@@ -1364,16 +750,15 @@ function awV6ZoomFiltered(){
 function awV6ApplyFilter(){
  selected=null;
  el("farSearch").value="";
- window.awVoiceFacilityFocus=null;
- window.awVoiceAssetIds=null;
  renderFacilities();
+ if(window.awCloseFacilityPanel)window.awCloseFacilityPanel();
  awV6ZoomFiltered();
 }
 
 el("scheme").onchange=awV6ApplyFilter;
 el("facilitySearch").oninput=awV6ApplyFilter;
-el("facility").onchange=e=>{window.awVoiceFacilityFocus=null;window.awVoiceAssetIds=null;el("farSearch").value="";selectFacility(e.target.value,true);};
-el("farSearch").oninput=()=>{window.awVoiceAssetIds=null;renderAssets();if(window.awRefreshMapPanel)window.awRefreshMapPanel();};
+el("facility").onchange=e=>selectFacility(e.target.value,true);
+el("farSearch").oninput=renderAssets;
 
 // V7 mobile layout, drag sheet and browser GPS. No hosted data is edited.
 (function(){
@@ -1389,8 +774,8 @@ el("farSearch").oninput=()=>{window.awVoiceAssetIds=null;renderAssets();if(windo
    document.getElementById('awSheetHint').textContent=pos==='closed'?'Find assets · Tap to open':pos==='half'?'Find assets · Swipe up for more':'Find assets · Swipe down for map';
    if(window.matchMedia('(max-width:700px)').matches){
      const h=pos==='closed'?54:pos==='half'?innerHeight*.5:innerHeight-44;
-     document.getElementById('awMapTools').style.bottom=(h+15)+'px';
-     gpsStatus.style.bottom=(h+12)+'px';
+     
+     
    }
  }
  let startY=null,startPos=null;
@@ -1404,7 +789,7 @@ el("farSearch").oninput=()=>{window.awVoiceAssetIds=null;renderAssets();if(windo
  });
  handle.addEventListener('pointercancel',()=>{startY=null;});
  handle.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setSheet(sheet.dataset.position==='full'?'closed':'full');}});
- toggle.onclick=()=>setSheet(sheet.dataset.position==='closed'?'half':'closed');
+ if(toggle)toggle.onclick=()=>setSheet(sheet.dataset.position==='closed'?'half':'closed');
  window.awV7SetSheet=setSheet;
  window.addEventListener('resize',()=>setSheet(sheet.dataset.position));
  locate.onclick=()=>{
@@ -1442,45 +827,32 @@ el("farSearch").oninput=()=>{window.awVoiceAssetIds=null;renderAssets();if(windo
 // V7.2 — Move ALL map overlays into dedicated bottom-sheet tabs on mobile.
 // ArcGIS Zoom widget is retained. Existing AGOL services, data and handlers are unchanged.
 function awV72SetupCleanMap(){
- if(!window.matchMedia('(max-width:700px)').matches)return;
- const content=el('awSheetContent');
- if(!content||el('awMobileTabs'))return;
- const existing=Array.from(content.children);
- const tabs=document.createElement('div');tabs.id='awMobileTabs';tabs.setAttribute('role','tablist');tabs.setAttribute('aria-label','Form 55 tools');
- const panes={};
- for(const [key,label] of [['search','Find assets'],['voice','Voice & GPS'],['layers','Layers & view']]){
-  const button=document.createElement('button');button.type='button';button.textContent=label;button.dataset.tab=key;button.setAttribute('role','tab');
-  button.setAttribute('aria-selected',String(key==='search'));
-  tabs.append(button);
-  const pane=document.createElement('div');pane.className='aw-tab-content';pane.id='awTab_'+key;pane.hidden=key!=='search';panes[key]=pane;
+ const sheet=el("awSheet"),content=el("awSheetContent"),filter=el("awFilters");
+ if(!sheet||!content)return;
+ const panels=Array.from(content.children);
+ const filterPanel=panels.find(p=>p.querySelector?.("#scheme"));
+ if(filterPanel){
+   filterPanel.id="awFilterPanel";
+   el("awMapPanel").before(filterPanel);
+   const title=filterPanel.querySelector("strong");if(title)title.textContent="Select scheme and facility";
+   const search=el("facilitySearch");if(search){search.previousElementSibling?.remove();search.type="hidden";}
+   el("awResetAll")?.remove();
  }
- content.replaceChildren(tabs,panes.search,panes.voice,panes.layers);
- for(const child of existing)panes.search.append(child);
- const move=(id,dest)=>{const n=el(id);if(n)dest.append(n);};
- move('awVoiceToolbar',panes.voice);
- move('awVoiceChoices',panes.voice);
- move('awVoiceDictionary',panes.voice);
- move('awMapTools',panes.voice);
- move('awGpsStatus',panes.voice);
- // Move existing widgets instead of duplicating them: listeners and state are preserved.
- const mapPanel=document.querySelector('#map .esri-ui-top-right');
- const panel=mapPanel?.querySelector('#awCollapse')?.closest('div[style]')||
-   Array.from(document.querySelectorAll('#map .esri-ui-top-right > *')).find(n=>n.querySelector?.('#awCollapse'));
- if(panel){panel.id='awExternalMapControls';panes.layers.append(panel);}
- const floating=el('awCurrentViewFloating');
- if(floating){floating.id='awExternalCurrentView';panes.layers.append(floating);}
- // Fallback: move any residual custom widgets out of the map, but leave Esri Zoom.
- const uiRight=document.querySelector('#map .esri-ui-top-right');
- if(uiRight){for(const node of Array.from(uiRight.children)){if(node.id!=='awExternalMapControls')panes.layers.append(node);}}
- const openTab=key=>{
-  for(const [name,pane] of Object.entries(panes))pane.hidden=name!==key;
-  for(const btn of tabs.querySelectorAll('button'))btn.setAttribute('aria-selected',String(btn.dataset.tab===key));
-  content.scrollTop=0;
-  if(window.awV7SetSheet)window.awV7SetSheet('half');
- };
- tabs.addEventListener('click',e=>{const key=e.target.closest('button')?.dataset.tab;if(key)openTab(key);});
- // When the user taps a facility on the map, the search tab remains easy to reach.
- window.awV72OpenTab=openTab;
+ const stats=content.querySelector(".stats");if(stats)stats.remove();
+ const mapTools=el("awMapTools");if(mapTools){
+   el("awMapPanel").append(mapTools);
+   const toggle=el("awSheetToggle");if(toggle)toggle.remove();
+ }
+ el("awMapPanel").append(el("awGpsStatus"));
+ const mapControls=document.querySelector("#awCollapse")?.parentElement?.parentElement;
+ if(mapControls){
+   mapControls.id="awMapControls";
+   const current=mapControls.querySelector("#awContext");if(current)current.remove();
+   mapControls.style.maxWidth="160px";
+ }
+ sheet.dataset.position="closed";
+ window.awOpenFacilityPanel=()=>{sheet.dataset.position="half";};
+ window.awCloseFacilityPanel=()=>{sheet.dataset.position="closed";};
 }
 
 start();
