@@ -223,7 +223,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
  #awSheetContent #awExternalMapControls #awCollapse{display:none!important}
  #awSheetContent #awExternalMapControls select{width:100%;font-size:16px}
  #awSheetContent #awExternalCurrentView{display:block!important;position:static!important;width:auto!important;max-width:none!important;margin-top:10px;background:#e8f5e9!important;color:#17382c!important}
- #awMapPanel .aw-map-heading,#awMapPanel #awVoiceDictionary,#awMapPanel #awVoiceChoices,#awMapPanel #awMapTools,#awMapPanel #awGpsStatus{display:none!important}
+ #awMapPanel .aw-map-heading,#awMapPanel #awVoiceDictionary,#awMapPanel #awVoiceChoices,#awMapPanel #awMapTools{display:none!important}
  #awMapPanel .esri-ui-top-right,#awMapPanel .esri-ui-bottom-right{display:none!important}
  #awMapPanel .esri-ui-top-left{top:82px;left:12px}
  #awSheetHandle{background:#f1f9f1}
@@ -242,6 +242,13 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 #awAssetDetail .aw-verify-link{display:block;background:#176744;color:white;padding:13px;border-radius:10px;text-align:center;font-weight:700;margin-top:12px;text-decoration:none}
 #awAssetDetail .aw-photo-note{font-size:12px;color:#53695d}
 #assets .aw-detail-open{margin-top:8px;background:#1b6a49;color:white;border:0;border-radius:9px;padding:9px 12px;font-weight:600}
+
+/* V7.9: small facility points, on-map GPS, no Current View */
+#awMapGpsStatus{position:absolute!important;bottom:62px;right:8px;z-index:12;max-width:180px;font-size:11px;pointer-events:none}
+#awCurrentViewFloating,#awExternalCurrentView{display:none!important}
+#awMapPanel{position:relative}
+#awMapGpsButton{position:absolute!important;right:12px;bottom:15px;z-index:12;width:44px;height:44px;border-radius:50%;border:2px solid #fff;background:#17533d;color:white;box-shadow:0 2px 10px #0005;font-size:24px;cursor:pointer;display:block!important}
+@media(max-width:700px){#awMapPanel #awMapGpsButton{display:block!important}}
 </style>
 </head>
 <body>
@@ -259,7 +266,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 <div class="panel" id="awMapPanel">
 <div class="aw-map-heading"><h3>Facility map</h3><div id="awVoiceToolbar" class="aw-voice-toolbar" aria-label="Voice navigation">
 <button type="button" id="awVoiceButton">🎤 Voice search</button><span id="awVoiceStatus" aria-live="polite">Ready</span>
-</div></div><div style="font-size:11px;color:#526577;margin:0 0 8px">Select a scheme first, then say a facility and component or FAR number. Example: “Nahoon Water Treatment Works”, then “flow meter”.</div><div id="awVoiceChoices" class="aw-voice-choices hidden" aria-live="polite"></div>
+</div></div><div style="font-size:11px;color:#526577;margin:0 0 8px">Select a scheme and facility first. Then say “find 0011”, “find all valves”, “find meters”, or “find pumps”.</div><div id="awVoiceChoices" class="aw-voice-choices hidden" aria-live="polite"></div>
 <details id="awVoiceDictionary"><summary>Teach voice search a name</summary><div class="aw-teach-row"><input id="awVoicePhrase" placeholder="What Chrome hears, e.g. now on" aria-label="Phrase heard"><select id="awVoiceTarget" aria-label="Correct scheme or facility"><option value="">Select correct name</option></select><button type="button" id="awVoiceTeach">Save phrase</button></div><div id="awVoiceSaved"></div><div id="awVocabularyInfo" style="margin-top:6px">Loading vocabulary...</div><button type="button" id="awExportVocabulary" style="font-size:11px;padding:6px;margin-top:6px">Export AGOL names + voice vocabulary</button></details>
 <div id="map"></div>
 <div id="awMapTools"><button type="button" id="awLocate" aria-label="Locate my position" title="Locate my position">◎</button><button type="button" id="awSheetToggle" aria-label="Show asset search" title="Show asset search">☰</button></div>
@@ -389,29 +396,44 @@ function status(f){
  return {total:arr.length,done,
   color:arr.length&&done===arr.length?"#198754":done>0?"#ef8b23":"#c63838"};
 }
+// V7.8: One scope for map, KPI counters and selected facility.
 function awScopeFacilities(){
  const scheme=el("scheme").value;
  const term=norm(el("facilitySearch").value);
- const list=facilities.filter(f=>(!scheme||f.Scheme===scheme)&&(!term||norm(f.Facility_Name).includes(term)));
- return selected && list.some(f=>clean(f.Facility_ID)===clean(selected.Facility_ID)) ? list.filter(f=>clean(f.Facility_ID)===clean(selected.Facility_ID)) : list;
+ let list=facilities.filter(f=>(!scheme||f.Scheme===scheme)&&(!term||norm(f.Facility_Name).includes(term)));
+ if(selected)return list.filter(f=>clean(f.Facility_ID)===clean(selected.Facility_ID));
+ // A stationary map extent controls KPIs, but does not delete pins outside the view.
+ if(view?.extent && graphicsLayer?.visible){
+  list=list.filter(f=>{
+   const g=f.__hostedGeometry;
+   if(!g||!Number.isFinite(Number(g.x))||!Number.isFinite(Number(g.y)))return false;
+   return view.extent.contains(new Point({longitude:Number(g.x),latitude:Number(g.y)}));
+  });
+ }
+ return list;
 }
 function awUpdateScopedKpis(){
  const list=awScopeFacilities();
  const ids=new Set(list.map(f=>clean(f.Facility_ID)));
- const assets=components.filter(a=>ids.has(clean(a.Facility_ID)));
+ let assets=components.filter(a=>ids.has(clean(a.Facility_ID)));
+ if(selected){
+  if(window.awVoiceAssetIds)assets=assets.filter(a=>window.awVoiceAssetIds.has(clean(a.FAR_ID)+"|"+clean(a.Facility_ID)));
+  const q=norm(el("farSearch").value).trim();
+  if(q)assets=assets.filter(a=>[a.FAR_ID,a.ComponentType,a.AssetName,a.Building,a.Floor,a.Room].some(v=>norm(v).includes(q)));
+ }
  el("facilityCount").textContent=list.length;
  el("assetCount").textContent=assets.length;
  el("verifiedCount").textContent=assets.filter(isVerified).length;
 }
 function renderFacilities(){
- const visible=filteredFacilities().filter(f=>!window.awVoiceFacilityFocus || clean(f.Facility_ID)===clean(window.awVoiceFacilityFocus));
+ const visible=filteredFacilities();
  const select=el("facility");
  select.replaceChildren(new Option("Select a facility",""));
  visible.sort((a,b)=>clean(a.Facility_Name).localeCompare(clean(b.Facility_Name)));
  for(const f of visible){
   select.add(new Option(f.Facility_Name,f.Facility_ID));
  }
- if(selected&&visible.some(f=>f.Facility_ID===selected.Facility_ID))
+ if(selected&&visible.some(f=>clean(f.Facility_ID)===clean(selected.Facility_ID)))
   select.value=selected.Facility_ID;
  else selected=null;
  renderMap(selected ? visible.filter(f=>clean(f.Facility_ID)===clean(selected.Facility_ID)) : visible);
@@ -420,11 +442,17 @@ function renderFacilities(){
 }
 function selectFacility(id,zoom=false){
  awV77CloseAsset();
- selected=facilities.find(f=>clean(f.Facility_ID)===clean(id))||null;
+ const previous=selected&&clean(selected.Facility_ID);
+ // Tapping an already-selected pin again restores other pins in this scheme.
+ const same=previous&&previous===clean(id);
+ selected=same?null:(facilities.find(f=>clean(f.Facility_ID)===clean(id))||null);
+ window.awVoiceFacilityFocus=selected?clean(selected.Facility_ID):null;
+ window.awVoiceAssetIds=null;
  if(selected){
   el("scheme").value=selected.Scheme||"";
   el("facilitySearch").value="";
  }
+ el("farSearch").value="";
  renderFacilities();
  if(zoom && selected) awV6ZoomFacility(selected);
 }
@@ -492,7 +520,7 @@ function renderMap(list){
   const s=status(f);
   graphicsLayer.add(new Graphic({
    geometry:new Point({longitude:lon,latitude:lat}),
-   symbol:{type:"simple-marker",style:"circle",size:12,
+   symbol:{type:"simple-marker",style:"circle",size:6,
     color:s.color,outline:{color:"white",width:1.5}},
    attributes:{fid:f.Facility_ID}
   }));
@@ -651,14 +679,15 @@ awPanel.querySelector("#awCollapse")
 
 
  // AW_V61_FLOATING_CONTROLS
- // Compact Current View sits at bottom-right; controls start collapsed.
+ // Current View is no longer displayed; legacy context is kept internally.
  const awCurrentView = awPanel.querySelector("#awContext");
  if(!awCurrentView)throw Error("Current View missing");
  const awCurrentViewPanel=document.createElement("div");
  awCurrentViewPanel.style.cssText="background:rgba(255,255,255,.97);color:#183153;border:1px solid #dce4ec;border-radius:8px;padding:6px 8px;box-shadow:0 2px 9px #0002;width:145px;max-width:40vw;box-sizing:border-box;font:10px Arial,sans-serif;";
  awCurrentView.style.cssText="line-height:1.25;overflow-wrap:anywhere;font-size:10px";
  awCurrentViewPanel.appendChild(awCurrentView);
- view.ui.add(awCurrentViewPanel,"bottom-right");
+ // Current View removed from UI; retain internal context node for legacy updates.
+
   awCurrentViewPanel.id="awCurrentViewFloating";
  awPanel.style.cssText="width:128px;max-width:36vw;box-sizing:border-box;background:rgba(255,255,255,.97);color:#183153;border:1px solid #dce4ec;border-radius:8px;box-shadow:0 2px 9px #0002;padding:7px;font:10px Arial,sans-serif;";
  awPanel.querySelector("strong").style.fontSize="11px";
@@ -946,7 +975,7 @@ awPanel.querySelector("#awCollapse")
     let t=awV66Normal(phrase);
     const names={zero:"0",oh:"0",one:"1",two:"2",three:"3",four:"4",five:"5",six:"6",seven:"7",eight:"8",nine:"9"};
     t=t.replace(/\b(?:zero|oh|one|two|three|four|five|six|seven|eight|nine)(?:\s+(?:zero|oh|one|two|three|four|five|six|seven|eight|nine)){3,}\b/g,m=>m.split(" ").map(w=>names[w]).join(""));
-    const m=t.match(/\b(?:far|asset|ending|ends|last four|last 4)\b[^0-9]{0,30}(\d[\d\s-]{3,})/);
+    const m=t.match(/\b(?:find|far|asset|ending|ends|last four|last 4)\b[^0-9]{0,30}(\d[\d\s-]{3,})/);
     if(m){const digits=m[1].replace(/\D/g,"");return digits.length>=4?digits.slice(-4):null;}
     const lone=t.match(/\b\d{4}\b/);
     return lone?lone[0]:null;
@@ -970,7 +999,7 @@ awPanel.querySelector("#awCollapse")
     window.awVoiceFacilityFocus=clean(f.Facility_ID);
     window.awVoiceAssetIds=new Set([clean(a.FAR_ID)+"|"+clean(a.Facility_ID)]);
     el("farSearch").value="";
-    selected=f;renderFacilities();renderAssets();
+    selected=f;renderFacilities();renderAssets();awUpdateScopedKpis();
     awVoiceChoices.classList.add("hidden");
     awSetStatus("1 registered component: FAR "+clean(a.FAR_ID)+" at "+f.Facility_Name);
     if(window.awRefreshMapPanel)window.awRefreshMapPanel();
@@ -990,16 +1019,14 @@ awPanel.querySelector("#awCollapse")
     window.awVoiceFacilityFocus=clean(f.Facility_ID);
     selected=f;el("farSearch").value="";
     window.awVoiceAssetIds=new Set(matches.map(a=>clean(a.FAR_ID)+"|"+clean(a.Facility_ID)));
-    renderFacilities();renderAssets();awV6ZoomFacility(f);
+    renderFacilities();renderAssets();awUpdateScopedKpis();awV6ZoomFacility(f);
     if(!matches.length){
       awVoiceChoices.classList.add("hidden");
       awSetStatus("No registered "+(kind||"FAR ending "+suffix)+" at "+f.Facility_Name+". No other facility selected.");
     }else if(matches.length===1){awV66SelectAsset(f,matches[0]);}
     else{
-      // Do not show an arbitrary asset as the answer: require a choice of exact FAR.
-      window.awVoiceAssetIds=new Set();renderAssets();
-      awV66ShowButtons(matches.length+" matching registered assets. Choose ONE FAR:",matches.map(a=>({label:"FAR "+clean(a.FAR_ID)+" — "+clean(a.AssetName||a.ComponentType||"Component"),value:a})),a=>awV66SelectAsset(f,a));
-      awSetStatus(matches.length+" matches at "+f.Facility_Name+"; select one FAR number.");
+      awVoiceChoices.classList.add("hidden");
+      awSetStatus(matches.length+" matching FAR components at "+f.Facility_Name+". Results shown below.");
     }
     if(window.awRefreshMapPanel)window.awRefreshMapPanel();
   }
@@ -1011,6 +1038,7 @@ awPanel.querySelector("#awCollapse")
       yes=>{if(yes)action();else awSetStatus("Search cancelled. Tap Voice search to try again.");});
   }
   function awV66Voice(transcripts){
+    if(!el("scheme").value || !selected){awSetStatus("Select a scheme and facility before using voice to find FAR components.");return;}
     const heard=(transcripts[0]||"").trim();
     el("awVoicePhrase").value=heard;
     awVoiceChoices.classList.add("hidden");
@@ -1021,43 +1049,9 @@ awPanel.querySelector("#awCollapse")
       awV73Confirm("Reset all facility and component filters",()=>awClearFacilitySelection());return;
     }
     const kind=awV66AssetKind(heard),suffix=awV66Digits(heard);
-    const named=/\b(water treatment works|pump station|dam|facility)\b/.test(speech);
-    if(!el("scheme").value){awSetStatus("Select a scheme first, then speak the facility name.");return;}
-    const candidates=awV66FacilityCandidates(heard);
-    if(speech.length<=2 && !selected){awSetStatus('Heard: “'+heard+'”. Too short to identify a facility safely. Please say the full name, e.g. Nahoon Water Treatment Works.');return;}
-    const best=candidates[0];
-    // Never use a loosely matching facility. Require either exact name or
-    // a clear place-name + facility type, otherwise ask the user to choose.
-    let f=null;
-    if(best){
-      const close=candidates.filter(c=>c.score>=best.score-12);
-      if(close.length===1 && best.score>=42)f=best.facility;
-      else if(close.length>1 && best.score>=28){
-        awV66ShowButtons("More than one facility matches what was heard. Choose the correct one:",
-          close.slice(0,8).map(c=>({label:c.facility.Facility_Name,value:c.facility})),
-          chosen=>awV73Confirm("Use "+chosen.Facility_Name,()=>{
-            if(kind||suffix)awV66SearchAsset(chosen,kind,suffix);else awV66SelectFacility(chosen);
-          }));return;
-      }
-    }
-    if(f){
-      const action=(kind||suffix)?"Find "+(kind||"FAR ending "+suffix)+" at "+f.Facility_Name:"Select "+f.Facility_Name;
-      awV73Confirm(action,()=>{if(kind||suffix)awV66SearchAsset(f,kind,suffix);else awV66SelectFacility(f);});return;
-    }
-    if(candidates.length && best.score>=24 && !selected){
-      awV66ShowButtons("Possible registered facilities — select only if correct:",
-        candidates.slice(0,6).map(c=>({label:c.facility.Facility_Name,value:c.facility})),
-        chosen=>awV73Confirm("Select "+chosen.Facility_Name,()=>awV66SelectFacility(chosen)));
-      awSetStatus('Heard: “'+heard+'”. Recognition uncertain. Please choose a facility.');return;
-    }
-    if(named){awSetStatus('Heard: “'+heard+'”. No confident facility match. Nothing changed.');return;}
-    if(selected && (kind||suffix)){
-      const current=selected;
-      awV73Confirm("Find "+(kind||"FAR ending "+suffix)+" at "+current.Facility_Name,
-        ()=>awV66SearchAsset(current,kind,suffix));return;
-    }
-    if(kind||suffix){awSetStatus('Heard: “'+heard+'”. Select a facility first, then speak the component.');return;}
-    awSetStatus('Heard: “'+heard+'”. No confident match. Nothing changed; try the full facility name.');
+    if(!kind && !suffix){awSetStatus('Heard: “'+heard+'”. Say a FAR last four digits, valves, meters or pumps.');return;}
+    const f=selected;
+    awV73Confirm('Find '+(kind||'FAR ending '+suffix)+' at '+f.Facility_Name,()=>awV66SearchAsset(f,kind,suffix));
   }
   if(!awSpeechAPI){awVoiceButton.disabled=true;awSetStatus("Speech recognition unavailable in this browser. Try Chrome on Android.");}else{
     const recognition=new awSpeechAPI();
@@ -1067,7 +1061,7 @@ awPanel.querySelector("#awCollapse")
     recognition.continuous=false;
     let finalPhrases=[];let speechAlternatives=[];
     awVoiceButton.onclick=()=>{
-      try{finalPhrases=[];speechAlternatives=[];if(!awVocabularyReady){awSetStatus("Vocabulary not loaded yet. Check Layers & View / Teach voice search status.");return;}recognition.start();}
+      try{if(!el("scheme").value||!selected){awSetStatus("Select a scheme and facility first.");return;}finalPhrases=[];speechAlternatives=[];if(!awVocabularyReady){awSetStatus("Vocabulary not loaded yet. Check Layers & View / Teach voice search status.");return;}recognition.start();}
       catch(e){awSetStatus("Microphone: "+e.message+". Wait a moment and retry.");}
     };
     recognition.onstart=()=>{
@@ -1242,11 +1236,11 @@ el("awResetAll").onclick=()=>{awClearFacilitySelection();el("facility").value=""
 window.awRefreshMapPanel = awRefreshMapPanel;
 
 view.watch("stationary",function(stationary){
- if(stationary) awRefreshMapPanel();
+ if(stationary){awRefreshMapPanel();awUpdateScopedKpis();}
 });
 
 graphicsLayer.graphics.on("change",function(){
- if(view.stationary) awRefreshMapPanel();
+ if(view.stationary){awRefreshMapPanel();awUpdateScopedKpis();}
 });
 
 view.when(awRefreshMapPanel);
@@ -1259,7 +1253,7 @@ console.log("AW approved map layers initialized.");
    view.on("click",async event=>{
     const hit=await view.hitTest(event);
     const found=hit.results.find(r=>r.graphic?.layer===graphicsLayer);
-    if(found){window.awVoiceFacilityFocus=clean(found.graphic.attributes.fid);selectFacility(found.graphic.attributes.fid,false);}
+    if(found){selectFacility(found.graphic.attributes.fid,false);}
    });
    view.when(resolve,reject);
   },reject);
@@ -1341,7 +1335,7 @@ function awV6ApplyFilter(){
 el("scheme").onchange=awV6ApplyFilter;
 el("facilitySearch").oninput=awV6ApplyFilter;
 el("facility").onchange=e=>{window.awVoiceFacilityFocus=null;window.awVoiceAssetIds=null;el("farSearch").value="";selectFacility(e.target.value,true);};
-el("farSearch").oninput=()=>{window.awVoiceAssetIds=null;renderAssets();if(window.awRefreshMapPanel)window.awRefreshMapPanel();};
+el("farSearch").oninput=()=>{window.awVoiceAssetIds=null;renderAssets();awUpdateScopedKpis();if(window.awRefreshMapPanel)window.awRefreshMapPanel();};
 
 // V7 mobile layout, drag sheet and browser GPS. No hosted data is edited.
 (function(){
@@ -1416,7 +1410,7 @@ function awV72SetupCleanMap(){
  const existing=Array.from(content.children);
  const tabs=document.createElement('div');tabs.id='awMobileTabs';tabs.setAttribute('role','tablist');tabs.setAttribute('aria-label','Form 55 tools');
  const panes={};
- for(const [key,label] of [['search','Find assets'],['voice','Voice & GPS'],['layers','Layers & view']]){
+ for(const [key,label] of [['search','Find assets'],['voice','Find components'],['layers','Layers & view']]){
   const button=document.createElement('button');button.type='button';button.textContent=label;button.dataset.tab=key;button.setAttribute('role','tab');
   button.setAttribute('aria-selected',String(key==='search'));
   tabs.append(button);
@@ -1428,15 +1422,16 @@ function awV72SetupCleanMap(){
  move('awVoiceToolbar',panes.voice);
  move('awVoiceChoices',panes.voice);
  move('awVoiceDictionary',panes.voice);
- move('awMapTools',panes.voice);
- move('awGpsStatus',panes.voice);
+ // GPS stays on the map; the other map controls are in the Layers tab.
+ const gps=el('awLocate');if(gps){gps.id='awMapGpsButton';el('awMapPanel').append(gps);}
+ const gpsStatus=el('awGpsStatus');if(gpsStatus){gpsStatus.id='awMapGpsStatus';el('awMapPanel').append(gpsStatus);}
  // Move existing widgets instead of duplicating them: listeners and state are preserved.
  const mapPanel=document.querySelector('#map .esri-ui-top-right');
  const panel=mapPanel?.querySelector('#awCollapse')?.closest('div[style]')||
    Array.from(document.querySelectorAll('#map .esri-ui-top-right > *')).find(n=>n.querySelector?.('#awCollapse'));
  if(panel){panel.id='awExternalMapControls';panes.layers.append(panel);}
  const floating=el('awCurrentViewFloating');
- if(floating){floating.id='awExternalCurrentView';panes.layers.append(floating);}
+ if(floating)floating.remove();
  // Fallback: move any residual custom widgets out of the map, but leave Esri Zoom.
  const uiRight=document.querySelector('#map .esri-ui-top-right');
  if(uiRight){for(const node of Array.from(uiRight.children)){if(node.id!=='awExternalMapControls')panes.layers.append(node);}}
